@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/aeshu/Project/mlruns/0/models/m-01ff75d455b747aea5692451648714fd/artifacts
+creation_timestamp: 1756004671029
+experiment_id: '0'
+last_updated_timestamp: 1756004675363
+model_id: m-01ff75d455b747aea5692451648714fd
+model_type: null
+name: model
+source_run_id: b9c2afd91bcc476b876a917ede07abab
+status: 2
+status_message: null

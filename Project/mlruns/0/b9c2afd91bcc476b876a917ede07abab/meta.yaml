@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/aeshu/Project/mlruns/0/b9c2afd91bcc476b876a917ede07abab/artifacts
+end_time: 1756004675434
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: b9c2afd91bcc476b876a917ede07abab
+run_name: mercurial-pig-201
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1756003841795
+status: 3
+tags: []
+user_id: aeshu

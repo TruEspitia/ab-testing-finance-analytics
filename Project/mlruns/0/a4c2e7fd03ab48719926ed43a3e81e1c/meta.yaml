@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/aeshu/Project/mlruns/0/a4c2e7fd03ab48719926ed43a3e81e1c/artifacts
+end_time: 1755806446027
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: a4c2e7fd03ab48719926ed43a3e81e1c
+run_name: unleashed-pig-729
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1755806440699
+status: 3
+tags: []
+user_id: aeshu

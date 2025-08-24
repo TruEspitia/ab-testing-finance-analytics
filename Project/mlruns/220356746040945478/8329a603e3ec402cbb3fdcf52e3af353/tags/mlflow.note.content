@@ -1,0 +1,1 @@
+Random Forest Regressor trained on engineered zone data. Captures non-linear relationships and feature interactions. Delivered a near-perfect R² and minimal RMSE. Suitable for robust predictions with minimal tuning.

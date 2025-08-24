@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1756055962815
+current_stage: None
+description: null
+last_updated_timestamp: 1756055962815
+name: RandomForest
+run_id: 8329a603e3ec402cbb3fdcf52e3af353
+run_link: null
+source: file:///C:/Users/aeshu/Project/mlruns/220356746040945478/8329a603e3ec402cbb3fdcf52e3af353/artifacts/randomforest
+status: READY
+status_message: null
+storage_location: file:///C:/Users/aeshu/Project/mlruns/220356746040945478/8329a603e3ec402cbb3fdcf52e3af353/artifacts/randomforest
+user_id: null
+version: 2

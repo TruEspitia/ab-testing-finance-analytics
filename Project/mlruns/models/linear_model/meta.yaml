@@ -1,0 +1,9 @@
+aliases: {}
+creation_timestamp: 1756001680711
+deployment_job_id: null
+deployment_job_state: null
+description: 'Linear Regression model trained using the full engineered dataset. R²
+  score: 1.00 | RMSE: 0.0000. Despite simplicity, this baseline model fits the training
+  data very well, suggesting strong linear patterns in features.'
+last_updated_timestamp: 1756002139329
+name: linear_model
