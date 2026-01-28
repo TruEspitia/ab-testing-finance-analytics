@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
 
 # --- Load Data ---
-df = pd.read_csv('customers.csv')
+df = pd.read_csv('data/customers.csv')
 
 # --- Title ---
 st.title("📊 A/B Testing and Hypothesis Validation in Consumer Finance Analytics")
