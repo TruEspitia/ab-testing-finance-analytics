@@ -52,11 +52,24 @@ class ABTestAnalyzer:
             self.df[target_column]
         )
         
+        # Convertir índices a string para una comparación más robusta si los valores de entrada son strings
+        # pero los del index son numéricos (común en APIs)
+        index_list = [str(x) for x in contingency_table.index]
+        
         # Verificar que existen los grupos
-        if control_value not in contingency_table.index:
-            raise ValueError(f"Valor de control '{control_value}' no encontrado en '{group_column}'")
-        if treatment_value not in contingency_table.index:
-            raise ValueError(f"Valor de treatment '{treatment_value}' no encontrado en '{group_column}'")
+        if str(control_value) not in index_list:
+            raise ValueError(f"Valor de control '{control_value}' no encontrado en '{group_column}'. Valores disponibles: {index_list}")
+        if str(treatment_value) not in index_list:
+            raise ValueError(f"Valor de treatment '{treatment_value}' no encontrado en '{group_column}'. Valores disponibles: {index_list}")
+        
+        # Obtener los valores originales del index que corresponden a los strings proporcionados
+        actual_control_val = contingency_table.index[index_list.index(str(control_value))]
+        actual_treatment_val = contingency_table.index[index_list.index(str(treatment_value))]
+        
+        # Reasignar para usar en el resto del método
+        control_value = actual_control_val
+        treatment_value = actual_treatment_val
+
         
         # Realizar test chi-cuadrado
         chi2, p_value, dof, expected = chi2_contingency(contingency_table)
@@ -100,8 +113,13 @@ class ABTestAnalyzer:
             alpha
         )
         
-        # Convertir tabla de contingencia a dict para serialización
-        contingency_dict = contingency_table.to_dict()
+        # Convertir tabla de contingencia a dict con llaves string para serialización (requisito de Pydantic)
+        contingency_raw = contingency_table.to_dict()
+        contingency_dict = {
+            str(outer_key): {str(inner_key): int(value) for inner_key, value in inner_map.items()}
+            for outer_key, inner_map in contingency_raw.items()
+        }
+
         
         return {
             'control_signup_rate': round(control_rate, 4),

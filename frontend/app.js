@@ -137,6 +137,40 @@ async function fetchStats() {
     return await response.json();
 }
 
+/**
+ * Sube múltiples archivos al servidor
+ */
+async function uploadBatchFiles(files) {
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append('files', file);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/upload-batch`, {
+        method: 'POST',
+        body: formData
+    });
+
+    return await response.json();
+}
+
+/**
+ * Valida un dataset
+ */
+async function validateDataset(datasetId) {
+    const response = await fetch(`${API_BASE_URL}/dataset/${datasetId}/validate`);
+    return await response.json();
+}
+
+/**
+ * Obtiene información de columnas
+ */
+async function fetchDatasetColumns(datasetId) {
+    const response = await fetch(`${API_BASE_URL}/dataset/${datasetId}/columns`);
+    return await response.json();
+}
+
+
 // =============================================
 // Gestión de Archivos
 // =============================================
@@ -144,6 +178,9 @@ async function fetchStats() {
 function initFileUpload() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
+
+    // Habilitar múltiples archivos
+    fileInput.multiple = true;
 
     // Click para seleccionar archivo
     uploadArea.addEventListener('click', () => fileInput.click());
@@ -162,19 +199,31 @@ function initFileUpload() {
         e.preventDefault();
         uploadArea.classList.remove('drag-over');
 
-        const files = e.dataTransfer.files;
+        const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) {
-            await handleFileUpload(files[0]);
+            // Si hay múltiples archivos, usar carga por lotes
+            if (files.length > 1) {
+                await handleBatchUpload(files);
+            } else {
+                await handleFileUpload(files[0]);
+            }
         }
     });
 
     // Cambio de archivo input
     fileInput.addEventListener('change', async (e) => {
-        if (e.target.files.length > 0) {
-            await handleFileUpload(e.target.files[0]);
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            // Si hay múltiples archivos, usar carga por lotes
+            if (files.length > 1) {
+                await handleBatchUpload(files);
+            } else {
+                await handleFileUpload(files[0]);
+            }
         }
     });
 }
+
 
 async function handleFileUpload(file) {
     // Validar tamaño (50MB max)
@@ -237,6 +286,94 @@ async function handleFileUpload(file) {
         }, 2000);
     }
 }
+
+/**
+ * Maneja la carga por lotes de múltiples archivos
+ */
+async function handleBatchUpload(files) {
+    // Validar todos los archivos primero
+    const maxSize = 50 * 1024 * 1024;
+    const validExtensions = ['csv', 'xlsx', 'xls', 'json'];
+
+    const validFiles = [];
+    const invalidFiles = [];
+
+    for (let file of files) {
+        if (file.size > maxSize) {
+            invalidFiles.push({ name: file.name, reason: 'Archivo demasiado grande (>50MB)' });
+            continue;
+        }
+
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!validExtensions.includes(extension)) {
+            invalidFiles.push({ name: file.name, reason: 'Formato no soportado' });
+            continue;
+        }
+
+        validFiles.push(file);
+    }
+
+    // Mostrar errores de validación
+    if (invalidFiles.length > 0) {
+        const errorMsg = invalidFiles.map(f => `${f.name}: ${f.reason}`).join('\n');
+        showToast(`${invalidFiles.length} archivo(s) inválido(s):\n${errorMsg}`, 'error');
+    }
+
+    if (validFiles.length === 0) {
+        return;
+    }
+
+    // Mostrar progreso
+    const uploadProgress = document.getElementById('uploadProgress');
+    const uploadArea = document.getElementById('uploadArea');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+
+    uploadArea.classList.add('hidden');
+    uploadProgress.classList.remove('hidden');
+    progressFill.style.width = '30%';
+    progressText.textContent = `Subiendo ${validFiles.length} archivo(s)...`;
+
+    try {
+        // Subir archivos
+        const result = await uploadBatchFiles(validFiles);
+
+        progressFill.style.width = '100%';
+        progressText.textContent = `${result.successful} archivo(s) cargado(s) exitosamente`;
+
+        if (result.successful > 0) {
+            showToast(`${result.successful} archivo(s) cargado(s) exitosamente`, 'success');
+
+            // Actualizar lista de datasets
+            await loadDatasets();
+
+            // Mostrar secciones
+            document.getElementById('previewSection').classList.remove('hidden');
+            document.getElementById('analysisSection').classList.remove('hidden');
+        }
+
+        if (result.failed > 0) {
+            const failedFiles = result.results
+                .filter(r => !r.success)
+                .map(r => `${r.filename}: ${r.error}`)
+                .join('\n');
+            showToast(`${result.failed} archivo(s) fallaron:\n${failedFiles}`, 'error');
+        }
+
+    } catch (error) {
+        showToast('Error de conexión con el servidor', 'error');
+        console.error('Batch upload error:', error);
+    } finally {
+        // Resetear UI
+        setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+            uploadArea.classList.remove('hidden');
+            progressFill.style.width = '0%';
+            document.getElementById('fileInput').value = '';
+        }, 3000);
+    }
+}
+
 
 // =============================================
 // Gestión de Datasets

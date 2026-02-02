@@ -43,10 +43,11 @@
             
             <div class="upload-area" id="uploadArea">
                 <div class="upload-icon">📁</div>
-                <h3>Arrastra y suelta tu archivo aquí</h3>
+                <h3>Arrastra y suelta tus archivos aquí</h3>
                 <p>o haz clic para seleccionar</p>
+                <p class="supported-formats">✨ Puedes seleccionar múltiples archivos</p>
                 <p class="supported-formats">Formatos soportados: CSV, XLSX, JSON</p>
-                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" hidden>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" multiple hidden>
             </div>
             
             <div class="upload-progress hidden" id="uploadProgress">

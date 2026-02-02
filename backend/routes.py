@@ -277,6 +277,7 @@ async def analyze_ab_test(config: ABTestConfig):
         )
 
 
+
 @router.get("/stats")
 async def get_stats():
     """
@@ -286,3 +287,178 @@ async def get_stats():
         Estadísticas generales
     """
     return dataset_manager.get_stats()
+
+
+@router.get("/dataset/{dataset_id}/validate")
+async def validate_dataset(dataset_id: str):
+    """
+    Valida la calidad de un dataset y proporciona sugerencias
+    
+    Args:
+        dataset_id: ID del dataset
+        
+    Returns:
+        Reporte de validación con calidad de datos y sugerencias
+    """
+    from .validators import DataValidator
+    
+    # Verificar que el dataset existe
+    if not dataset_manager.dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="Dataset no encontrado")
+    
+    df = dataset_manager.get_dataset(dataset_id)
+    
+    if df is None:
+        raise HTTPException(status_code=500, detail="Error al obtener dataset")
+    
+    # Ejecutar validaciones
+    validator = DataValidator()
+    
+    return {
+        "dataset_id": dataset_id,
+        "column_types": validator.detect_column_types(df),
+        "quality_report": validator.validate_data_quality(df),
+        "suggestions": validator.suggest_corrections(df),
+        "summary_statistics": validator.get_summary_statistics(df)
+    }
+
+
+@router.get("/dataset/{dataset_id}/columns")
+async def get_dataset_columns(dataset_id: str):
+    """
+    Obtiene información detallada sobre las columnas de un dataset
+    
+    Args:
+        dataset_id: ID del dataset
+        
+    Returns:
+        Información de columnas
+    """
+    from .validators import DataValidator
+    
+    if not dataset_manager.dataset_exists(dataset_id):
+        raise HTTPException(status_code=404, detail="Dataset no encontrado")
+    
+    df = dataset_manager.get_dataset(dataset_id)
+    metadata = dataset_manager.get_metadata(dataset_id)
+    
+    validator = DataValidator()
+    column_types = validator.detect_column_types(df)
+    
+    columns_info = []
+    for col in df.columns:
+        columns_info.append({
+            "name": col,
+            "type": column_types.get(col, "unknown"),
+            "missing_count": int(df[col].isnull().sum()),
+            "missing_percentage": round((df[col].isnull().sum() / len(df)) * 100, 2),
+            "unique_values": int(df[col].nunique()),
+            "dtype": str(df[col].dtype)
+        })
+    
+    return {
+        "dataset_id": dataset_id,
+        "total_columns": len(columns_info),
+        "columns": columns_info
+    }
+
+
+@router.post("/upload-batch")
+async def upload_batch_files(files: List[UploadFile] = File(...)):
+    """
+    Endpoint para subir múltiples archivos a la vez
+    
+    Args:
+        files: Lista de archivos a subir
+        
+    Returns:
+        Lista de respuestas de carga
+    """
+    results = []
+    
+    for file in files:
+        try:
+            # Validar que se subió un archivo
+            if not file.filename:
+                results.append({
+                    "filename": "unknown",
+                    "success": False,
+                    "error": "No se proporcionó ningún archivo"
+                })
+                continue
+            
+            # Detectar formato del archivo
+            file_extension = Path(file.filename).suffix.lower().lstrip('.')
+            
+            # Mapear extensión a FileFormat
+            format_mapping = {
+                'csv': FileFormat.CSV,
+                'xlsx': FileFormat.XLSX,
+                'xls': FileFormat.XLSX,
+                'json': FileFormat.JSON
+            }
+            
+            if file_extension not in format_mapping:
+                results.append({
+                    "filename": file.filename,
+                    "success": False,
+                    "error": f"Formato '{file_extension}' no soportado"
+                })
+                continue
+            
+            file_format = format_mapping[file_extension]
+            
+            # Crear archivo temporal
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file_extension}") as tmp_file:
+                # Copiar contenido del archivo subido
+                shutil.copyfileobj(file.file, tmp_file)
+                tmp_path = Path(tmp_file.name)
+            
+            try:
+                # Obtener tamaño del archivo
+                file_size = tmp_path.stat().st_size
+                
+                # Cargar el archivo usando DataLoader
+                df = DataLoader.load_file(tmp_path, file_format.value)
+                
+                # Agregar al gestor de datasets
+                dataset_id = dataset_manager.add_dataset(
+                    df=df,
+                    filename=file.filename,
+                    file_format=file_format,
+                    size_bytes=file_size
+                )
+                
+                # Obtener metadata
+                metadata = dataset_manager.get_metadata(dataset_id)
+                
+                results.append({
+                    "filename": file.filename,
+                    "success": True,
+                    "dataset": metadata.dict()
+                })
+                
+            finally:
+                # Limpiar archivo temporal
+                tmp_path.unlink(missing_ok=True)
+                
+        except DataLoaderError as e:
+            results.append({
+                "filename": file.filename,
+                "success": False,
+                "error": str(e)
+            })
+        except Exception as e:
+            results.append({
+                "filename": file.filename,
+                "success": False,
+                "error": f"Error inesperado: {str(e)}"
+            })
+    
+    return {
+        "total_files": len(files),
+        "successful": sum(1 for r in results if r.get("success", False)),
+        "failed": sum(1 for r in results if not r.get("success", False)),
+        "results": results
+    }
+
