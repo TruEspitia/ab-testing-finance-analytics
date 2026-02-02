@@ -210,6 +210,10 @@ async def analyze_ab_test(config: ABTestConfig):
     """
     Realiza un análisis A/B Testing
     
+    Detecta automáticamente si la variable objetivo es:
+    - Categórica (binaria o multi-categoría): usa Chi-cuadrado
+    - Continua: usa t-test
+    
     Args:
         config: Configuración del análisis
         
@@ -226,8 +230,8 @@ async def analyze_ab_test(config: ABTestConfig):
         # Crear analizador
         analyzer = ABTestAnalyzer(df)
         
-        # Realizar análisis categórico (para tasas de conversión)
-        results = analyzer.analyze_categorical(
+        # Realizar análisis automático (detecta tipo de variable)
+        results = analyzer.auto_analyze(
             group_column=config.group_column,
             target_column=config.target_column,
             control_value=config.control_value,
@@ -245,16 +249,10 @@ async def analyze_ab_test(config: ABTestConfig):
         return ABTestResult(
             success=False,
             dataset_id=config.dataset_id,
-            control_signup_rate=0,
-            treatment_signup_rate=0,
-            lift=0,
-            lift_percentage=0,
-            chi2_statistic=0,
+            analysis_type="unknown",
             p_value=1,
-            degrees_of_freedom=0,
             is_significant=False,
             alpha=config.alpha,
-            contingency_table={},
             interpretation="",
             error=str(e)
         )
@@ -262,16 +260,10 @@ async def analyze_ab_test(config: ABTestConfig):
         return ABTestResult(
             success=False,
             dataset_id=config.dataset_id,
-            control_signup_rate=0,
-            treatment_signup_rate=0,
-            lift=0,
-            lift_percentage=0,
-            chi2_statistic=0,
+            analysis_type="unknown",
             p_value=1,
-            degrees_of_freedom=0,
             is_significant=False,
             alpha=config.alpha,
-            contingency_table={},
             interpretation="",
             error=f"Error inesperado: {str(e)}"
         )

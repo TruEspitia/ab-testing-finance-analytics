@@ -686,52 +686,151 @@ async function handleAnalysisSubmit() {
 function renderResults(result) {
     const container = document.getElementById('resultsContent');
 
-    // Determinar color del lift
-    const liftClass = result.lift_percentage > 0 ? 'positive' : 'negative';
-    const liftIcon = result.lift_percentage > 0 ? '📈' : '📉';
+    // Detectar tipo de análisis
+    const isContinuous = result.analysis_type === 'continuous';
 
-    container.innerHTML = `
-        <!-- Métricas Principales -->
-        <div class="results-metrics">
-            <div class="metric-card">
-                <div class="metric-label">Control</div>
-                <div class="metric-value">${(result.control_signup_rate * 100).toFixed(2)}%</div>
+    let metricsHtml = '';
+    let statsCardHtml = '';
+
+    if (isContinuous) {
+        // Métricas para análisis continuo (t-test)
+        const changeClass = result.percentage_change > 0 ? 'positive' : 'negative';
+        const changeIcon = result.percentage_change > 0 ? '📈' : '📉';
+
+        metricsHtml = `
+            <div class="results-metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Control (Media)</div>
+                    <div class="metric-value">${result.control_mean.toFixed(4)}</div>
+                    <div class="metric-sublabel">σ = ${result.control_std.toFixed(4)}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Treatment (Media)</div>
+                    <div class="metric-value">${result.treatment_mean.toFixed(4)}</div>
+                    <div class="metric-sublabel">σ = ${result.treatment_std.toFixed(4)}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Cambio ${changeIcon}</div>
+                    <div class="metric-value ${changeClass}">${result.percentage_change.toFixed(2)}%</div>
+                    <div class="metric-sublabel">Δ = ${result.difference.toFixed(4)}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">P-value</div>
+                    <div class="metric-value">${result.p_value.toFixed(6)}</div>
+                </div>
+            </div>
+        `;
+
+        statsCardHtml = `
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">📊 Estadísticas T-test</h3>
+                <table style="width: 100%; font-size: 0.9rem;">
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Estadístico t</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.t_statistic.toFixed(4)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Media Control</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.control_mean.toFixed(4)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Media Tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.treatment_mean.toFixed(4)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Mediana Control</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.control_median?.toFixed(4) || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Mediana Tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.treatment_median?.toFixed(4) || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Nivel de significancia</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.alpha}</td>
+                    </tr>
+                    <tr style="border-top: 1px solid var(--glass-border);">
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">¿Significativo?</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600; color: ${result.is_significant ? 'var(--success)' : 'var(--error)'};">
+                            ${result.is_significant ? '✅ Sí' : '❌ No'}
+                        </td>
+                    </tr>
+                </table>
             </div>
             
-            <div class="metric-card">
-                <div class="metric-label">Treatment</div>
-                <div class="metric-value">${(result.treatment_signup_rate * 100).toFixed(2)}%</div>
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">📋 Tamaños de Muestra</h3>
+                <table style="width: 100%; font-size: 0.9rem;">
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Control</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.sample_sizes?.control?.toLocaleString() || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.sample_sizes?.treatment?.toLocaleString() || 'N/A'}</td>
+                    </tr>
+                    <tr style="border-top: 1px solid var(--glass-border);">
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Total</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${((result.sample_sizes?.control || 0) + (result.sample_sizes?.treatment || 0)).toLocaleString()}</td>
+                    </tr>
+                </table>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-label">Lift ${liftIcon}</div>
-                <div class="metric-value ${liftClass}">${result.lift_percentage.toFixed(2)}%</div>
+        `;
+    } else {
+        // Métricas para análisis categórico (chi-cuadrado)
+        const liftClass = result.lift_percentage > 0 ? 'positive' : 'negative';
+        const liftIcon = result.lift_percentage > 0 ? '📈' : '📉';
+
+        // Determinar etiquetas según si es binario o multi-categoría
+        const rateLabel = result.is_binary !== false ? 'Tasa de Conversión' : 'Proporción';
+
+        metricsHtml = `
+            <div class="results-metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Control</div>
+                    <div class="metric-value">${(result.control_signup_rate * 100).toFixed(2)}%</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Treatment</div>
+                    <div class="metric-value">${(result.treatment_signup_rate * 100).toFixed(2)}%</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Lift ${liftIcon}</div>
+                    <div class="metric-value ${liftClass}">${result.lift_percentage.toFixed(2)}%</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">P-value</div>
+                    <div class="metric-value">${result.p_value.toFixed(6)}</div>
+                </div>
             </div>
-            
-            <div class="metric-card">
-                <div class="metric-label">P-value</div>
-                <div class="metric-value">${result.p_value.toFixed(6)}</div>
-            </div>
-        </div>
-        
-        <!-- Interpretación -->
-        <div class="interpretation-box ${result.is_significant ? 'success' : 'warning'}">
-            ${result.interpretation}
-        </div>
-        
-        <!-- Estadísticas Detalladas -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+        `;
+
+        const categoryInfo = result.n_categories
+            ? `<tr>
+                    <td style="padding: var(--spacing-xs); color: var(--text-muted);">Categorías</td>
+                    <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.n_categories} (${result.is_binary ? 'binaria' : 'multi-categoría'})</td>
+               </tr>`
+            : '';
+
+        statsCardHtml = `
             <div class="glass-card" style="padding: var(--spacing-md);">
                 <h3 style="margin-bottom: var(--spacing-md);">📊 Estadísticas Chi-cuadrado</h3>
                 <table style="width: 100%; font-size: 0.9rem;">
                     <tr>
                         <td style="padding: var(--spacing-xs); color: var(--text-muted);">Estadístico χ²</td>
-                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.chi2_statistic.toFixed(4)}</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.chi2_statistic?.toFixed(4) || 'N/A'}</td>
                     </tr>
                     <tr>
                         <td style="padding: var(--spacing-xs); color: var(--text-muted);">Grados de libertad</td>
-                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.degrees_of_freedom}</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.degrees_of_freedom || 'N/A'}</td>
                     </tr>
+                    ${categoryInfo}
                     <tr>
                         <td style="padding: var(--spacing-xs); color: var(--text-muted);">Nivel de significancia</td>
                         <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.alpha}</td>
@@ -749,6 +848,31 @@ function renderResults(result) {
                 <h3 style="margin-bottom: var(--spacing-md);">📋 Tabla de Contingencia</h3>
                 <div id="contingencyTable"></div>
             </div>
+        `;
+    }
+
+    // Título del tipo de análisis
+    const analysisTypeTitle = isContinuous
+        ? '🔢 Análisis de Variable Continua (T-test)'
+        : `📊 Análisis de Variable Categórica (Chi-cuadrado${result.is_binary === false ? ' - Multi-categoría' : ''})`;
+
+    container.innerHTML = `
+        <!-- Tipo de Análisis -->
+        <div class="analysis-type-badge" style="background: var(--glass-bg); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-md); display: inline-block;">
+            ${analysisTypeTitle}
+        </div>
+        
+        <!-- Métricas Principales -->
+        ${metricsHtml}
+        
+        <!-- Interpretación -->
+        <div class="interpretation-box ${result.is_significant ? 'success' : 'warning'}">
+            ${result.interpretation}
+        </div>
+        
+        <!-- Estadísticas Detalladas -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+            ${statsCardHtml}
         </div>
         
         <!-- Gráfico -->
@@ -758,8 +882,10 @@ function renderResults(result) {
         </div>
     `;
 
-    // Renderizar tabla de contingencia
-    renderContingencyTable(result.contingency_table);
+    // Renderizar tabla de contingencia solo para análisis categórico
+    if (!isContinuous && result.contingency_table) {
+        renderContingencyTable(result.contingency_table);
+    }
 
     // Renderizar gráfico
     renderPlotlyChart(result);
@@ -801,57 +927,148 @@ function renderContingencyTable(contingencyTable) {
 }
 
 function renderPlotlyChart(result) {
-    const data = [
-        {
-            x: ['Control', 'Treatment'],
-            y: [
-                result.control_signup_rate * 100,
-                result.treatment_signup_rate * 100
-            ],
-            type: 'bar',
-            marker: {
-                color: ['#6366f1', '#8b5cf6'],
-                line: {
-                    color: '#fff',
-                    width: 2
+    const isContinuous = result.analysis_type === 'continuous';
+
+    let data, layout;
+
+    if (isContinuous) {
+        // Gráfico para variables continuas - Comparación de medias con barras de error
+        data = [
+            {
+                x: ['Control', 'Treatment'],
+                y: [result.control_mean, result.treatment_mean],
+                error_y: {
+                    type: 'data',
+                    array: [result.control_std, result.treatment_std],
+                    visible: true,
+                    color: '#94a3b8'
+                },
+                type: 'bar',
+                marker: {
+                    color: ['#6366f1', '#8b5cf6'],
+                    line: {
+                        color: '#fff',
+                        width: 2
+                    }
+                },
+                text: [
+                    `${result.control_mean.toFixed(2)}`,
+                    `${result.treatment_mean.toFixed(2)}`
+                ],
+                textposition: 'outside',
+                textfont: {
+                    size: 14,
+                    color: '#f8fafc'
+                }
+            }
+        ];
+
+        layout = {
+            title: {
+                text: 'Comparación de Medias por Grupo',
+                font: {
+                    size: 18,
+                    color: '#f8fafc'
                 }
             },
-            text: [
-                `${(result.control_signup_rate * 100).toFixed(2)}%`,
-                `${(result.treatment_signup_rate * 100).toFixed(2)}%`
-            ],
-            textposition: 'outside',
-            textfont: {
-                size: 14,
-                color: '#f8fafc'
-            }
-        }
-    ];
-
-    const layout = {
-        title: {
-            text: 'Tasas de Conversión por Grupo',
+            xaxis: {
+                title: 'Grupo',
+                color: '#f8fafc',
+                gridcolor: '#334155'
+            },
+            yaxis: {
+                title: 'Valor Promedio',
+                color: '#f8fafc',
+                gridcolor: '#334155'
+            },
+            plot_bgcolor: 'rgba(255, 255, 255, 0.03)',
+            paper_bgcolor: 'transparent',
             font: {
-                size: 18,
                 color: '#f8fafc'
+            },
+            annotations: [{
+                x: 0.5,
+                y: -0.15,
+                xref: 'paper',
+                yref: 'paper',
+                text: `Diferencia: ${result.difference >= 0 ? '+' : ''}${result.difference.toFixed(4)} (${result.percentage_change >= 0 ? '+' : ''}${result.percentage_change.toFixed(2)}%)`,
+                showarrow: false,
+                font: {
+                    size: 12,
+                    color: result.is_significant ? '#22c55e' : '#f59e0b'
+                }
+            }]
+        };
+    } else {
+        // Gráfico para variables categóricas - Tasas de conversión
+        data = [
+            {
+                x: ['Control', 'Treatment'],
+                y: [
+                    result.control_signup_rate * 100,
+                    result.treatment_signup_rate * 100
+                ],
+                type: 'bar',
+                marker: {
+                    color: ['#6366f1', '#8b5cf6'],
+                    line: {
+                        color: '#fff',
+                        width: 2
+                    }
+                },
+                text: [
+                    `${(result.control_signup_rate * 100).toFixed(2)}%`,
+                    `${(result.treatment_signup_rate * 100).toFixed(2)}%`
+                ],
+                textposition: 'outside',
+                textfont: {
+                    size: 14,
+                    color: '#f8fafc'
+                }
             }
-        },
-        xaxis: {
-            title: 'Grupo',
-            color: '#f8fafc',
-            gridcolor: '#334155'
-        },
-        yaxis: {
-            title: 'Tasa de Conversión (%)',
-            color: '#f8fafc',
-            gridcolor: '#334155'
-        },
-        plot_bgcolor: 'rgba(255, 255, 255, 0.03)',
-        paper_bgcolor: 'transparent',
-        font: {
-            color: '#f8fafc'
-        }
-    };
+        ];
+
+        const chartTitle = result.is_binary !== false
+            ? 'Tasas de Conversión por Grupo'
+            : 'Distribución de Categorías por Grupo';
+
+        layout = {
+            title: {
+                text: chartTitle,
+                font: {
+                    size: 18,
+                    color: '#f8fafc'
+                }
+            },
+            xaxis: {
+                title: 'Grupo',
+                color: '#f8fafc',
+                gridcolor: '#334155'
+            },
+            yaxis: {
+                title: result.is_binary !== false ? 'Tasa de Conversión (%)' : 'Proporción (%)',
+                color: '#f8fafc',
+                gridcolor: '#334155'
+            },
+            plot_bgcolor: 'rgba(255, 255, 255, 0.03)',
+            paper_bgcolor: 'transparent',
+            font: {
+                color: '#f8fafc'
+            },
+            annotations: [{
+                x: 0.5,
+                y: -0.15,
+                xref: 'paper',
+                yref: 'paper',
+                text: `Lift: ${result.lift_percentage >= 0 ? '+' : ''}${result.lift_percentage.toFixed(2)}%`,
+                showarrow: false,
+                font: {
+                    size: 12,
+                    color: result.is_significant ? '#22c55e' : '#f59e0b'
+                }
+            }]
+        };
+    }
 
     const config = {
         responsive: true,

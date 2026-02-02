@@ -634,6 +634,13 @@ body {
     color: var(--error);
 }
 
+.metric-sublabel {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+    font-style: italic;
+}
+
 .interpretation-box {
     background: rgba(99, 102, 241, 0.1);
     border-left: 4px solid var(--primary);

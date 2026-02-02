@@ -64,25 +64,40 @@ class ABTestConfig(BaseModel):
 
 
 class ABTestResult(BaseModel):
-    """Resultados del análisis A/B Testing"""
+    """Resultados del análisis A/B Testing (soporta categórico y continuo)"""
     success: bool
     dataset_id: str
     
-    # Métricas de conversión
-    control_signup_rate: float
-    treatment_signup_rate: float
-    lift: float
-    lift_percentage: float
+    # Tipo de análisis realizado
+    analysis_type: str = "categorical"  # 'categorical' o 'continuous'
     
-    # Resultados estadísticos
-    chi2_statistic: float
+    # Para análisis categórico binario/multi-categoría
+    is_binary: Optional[bool] = None
+    n_categories: Optional[int] = None
+    control_signup_rate: Optional[float] = None
+    treatment_signup_rate: Optional[float] = None
+    lift: Optional[float] = None
+    lift_percentage: Optional[float] = None
+    chi2_statistic: Optional[float] = None
+    degrees_of_freedom: Optional[int] = None
+    contingency_table: Optional[Dict[str, Dict[str, int]]] = None
+    
+    # Para análisis continuo (t-test)
+    control_mean: Optional[float] = None
+    treatment_mean: Optional[float] = None
+    control_std: Optional[float] = None
+    treatment_std: Optional[float] = None
+    control_median: Optional[float] = None
+    treatment_median: Optional[float] = None
+    difference: Optional[float] = None
+    percentage_change: Optional[float] = None
+    t_statistic: Optional[float] = None
+    
+    # Comunes a ambos tipos
     p_value: float
-    degrees_of_freedom: int
     is_significant: bool
     alpha: float
-    
-    # Datos para visualización
-    contingency_table: Dict[str, Dict[str, int]]
+    sample_sizes: Optional[Dict[str, int]] = None
     
     # Interpretación
     interpretation: str
