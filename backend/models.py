@@ -111,3 +111,47 @@ class ErrorResponse(BaseModel):
     success: bool = False
     error: str
     detail: Optional[str] = None
+
+
+class SCMConfig(BaseModel):
+    """Configuración para análisis de Control Sintético"""
+    dataset_id: str
+    time_column: str = Field(..., description="Columna que contiene el tiempo")
+    unit_column: str = Field(..., description="Columna que identifica las unidades")
+    target_column: str = Field(..., description="Columna con la variable de resultado")
+    treated_unit: str = Field(..., description="Nombre/ID de la unidad tratada")
+    treatment_time: float = Field(..., description="Momento en que ocurrió el tratamiento")
+
+
+class SCMResult(BaseModel):
+    """Resultados del análisis de Control Sintético"""
+    success: bool
+    dataset_id: str
+    analysis_type: str = "synthetic_control"
+    
+    # Información del análisis
+    treated_unit: Optional[str] = None
+    treatment_time: Optional[float] = None
+    
+    # Pesos de las unidades de control
+    weights: Optional[Dict[str, float]] = None
+    
+    # Series temporales
+    synthetic_values: Optional[List[float]] = None
+    treated_values: Optional[List[float]] = None
+    time_values: Optional[List[Any]] = None
+    
+    # Métricas
+    pre_treatment_rmspe: Optional[float] = None
+    post_treatment_effect: Optional[float] = None
+    average_treatment_effect: Optional[float] = None
+    n_pre_periods: Optional[int] = None
+    n_post_periods: Optional[int] = None
+    n_control_units: Optional[int] = None
+    
+    # Interpretación
+    interpretation: str = ""
+    
+    # Error si lo hay
+    error: Optional[str] = None
+

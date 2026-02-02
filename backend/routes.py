@@ -15,11 +15,14 @@ from .models import (
     ABTestConfig,
     ABTestResult,
     ErrorResponse,
-    FileFormat
+    FileFormat,
+    SCMConfig,
+    SCMResult
 )
 from .data_loader import DataLoader, DataLoaderError
 from .dataset_manager import dataset_manager
 from .ab_testing import ABTestAnalyzer
+from .synthetic_control import SyntheticControlAnalyzer
 
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -264,6 +267,61 @@ async def analyze_ab_test(config: ABTestConfig):
             p_value=1,
             is_significant=False,
             alpha=config.alpha,
+            interpretation="",
+            error=f"Error inesperado: {str(e)}"
+        )
+
+
+@router.post("/analyze/scm", response_model=SCMResult)
+async def analyze_synthetic_control(config: SCMConfig):
+    """
+    Realiza un análisis de Control Sintético (Synthetic Control Method)
+    
+    Este método estima el efecto causal de una intervención en una unidad
+    tratada, utilizando una combinación ponderada de unidades de control
+    para crear un "contrafactual sintético".
+    
+    Args:
+        config: Configuración del análisis SCM
+        
+    Returns:
+        SCMResult con los resultados del análisis
+    """
+    try:
+        # Obtener el dataset
+        df = dataset_manager.get_dataset(config.dataset_id)
+        
+        if df is None:
+            raise HTTPException(status_code=404, detail="Dataset no encontrado")
+        
+        # Crear analizador
+        analyzer = SyntheticControlAnalyzer(df)
+        
+        # Realizar análisis
+        results = analyzer.analyze(
+            time_column=config.time_column,
+            unit_column=config.unit_column,
+            target_column=config.target_column,
+            treated_unit=config.treated_unit,
+            treatment_time=config.treatment_time
+        )
+        
+        # Agregar dataset_id a los resultados
+        results['dataset_id'] = config.dataset_id
+        
+        return SCMResult(**results)
+        
+    except ValueError as e:
+        return SCMResult(
+            success=False,
+            dataset_id=config.dataset_id,
+            interpretation="",
+            error=str(e)
+        )
+    except Exception as e:
+        return SCMResult(
+            success=False,
+            dataset_id=config.dataset_id,
             interpretation="",
             error=f"Error inesperado: {str(e)}"
         )

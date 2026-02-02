@@ -387,6 +387,7 @@ async function loadDatasets() {
         renderDatasetsList();
         updateDatasetSelectors();
         await updateStats();
+        updateSCMSection();
 
     } catch (error) {
         showToast('Error al cargar datasets', 'error');
@@ -1079,6 +1080,383 @@ function renderPlotlyChart(result) {
 }
 
 // =============================================
+// Synthetic Control Method (SCM)
+// =============================================
+
+/**
+ * Ejecuta análisis de Control Sintético
+ */
+async function runSCMAnalysis(config) {
+    const response = await fetch(`${API_BASE_URL}/analyze/scm`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    });
+    return await response.json();
+}
+
+/**
+ * Inicializa el formulario de Control Sintético
+ */
+function initSCMForm() {
+    const scmForm = document.getElementById('scmForm');
+    const scmDatasetSelect = document.getElementById('scmDataset');
+    const unitColumnSelect = document.getElementById('unitColumn');
+    const timeColumnSelect = document.getElementById('timeColumn');
+    const scmTargetColumnSelect = document.getElementById('scmTargetColumn');
+    const treatedUnitSelect = document.getElementById('treatedUnit');
+
+    if (!scmForm) return;
+
+    // Cuando cambia el dataset, llenar los selects de columnas
+    scmDatasetSelect.addEventListener('change', async (e) => {
+        const datasetId = e.target.value;
+
+        if (!datasetId) {
+            [unitColumnSelect, timeColumnSelect, scmTargetColumnSelect, treatedUnitSelect].forEach(sel => {
+                sel.innerHTML = '<option value="">Selecciona columna...</option>';
+            });
+            return;
+        }
+
+        try {
+            const preview = await fetchDatasetPreview(datasetId, 100);
+            const columns = preview.columns || [];
+
+            // Llenar selects de columnas
+            const columnOptions = columns.map(col => `<option value="${col}">${col}</option>`).join('');
+
+            timeColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>' + columnOptions;
+            unitColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>' + columnOptions;
+            scmTargetColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>' + columnOptions;
+
+            // Guardar preview para después llenar las unidades
+            appState.scmPreview = preview;
+
+        } catch (error) {
+            showToast('Error al cargar columnas', 'error');
+        }
+    });
+
+    // Cuando cambia la columna de unidades, llenar el select de unidad tratada
+    unitColumnSelect.addEventListener('change', async (e) => {
+        const unitColumn = e.target.value;
+
+        if (!unitColumn || !appState.scmPreview) {
+            treatedUnitSelect.innerHTML = '<option value="">Selecciona unidad...</option>';
+            return;
+        }
+
+        // Obtener valores únicos de la columna de unidades
+        const data = appState.scmPreview.data || [];
+        const uniqueUnits = [...new Set(data.map(row => row[unitColumn]))].filter(u => u != null);
+
+        const unitOptions = uniqueUnits.map(unit => `<option value="${unit}">${unit}</option>`).join('');
+        treatedUnitSelect.innerHTML = '<option value="">Selecciona unidad...</option>' + unitOptions;
+    });
+
+    // Envío del formulario
+    scmForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const config = {
+            dataset_id: scmDatasetSelect.value,
+            time_column: timeColumnSelect.value,
+            unit_column: unitColumnSelect.value,
+            target_column: scmTargetColumnSelect.value,
+            treated_unit: treatedUnitSelect.value,
+            treatment_time: parseFloat(document.getElementById('treatmentTime').value)
+        };
+
+        try {
+            setLoading(true);
+            const result = await runSCMAnalysis(config);
+            setLoading(false);
+
+            if (result.success) {
+                showToast('Análisis de Control Sintético completado', 'success');
+                renderSCMResults(result);
+                document.getElementById('scmResultsSection').classList.remove('hidden');
+            } else {
+                showToast(result.error || 'Error en el análisis', 'error');
+            }
+        } catch (error) {
+            setLoading(false);
+            showToast('Error de conexión: ' + error.message, 'error');
+        }
+    });
+}
+
+/**
+ * Renderiza los resultados de Control Sintético
+ */
+function renderSCMResults(result) {
+    const container = document.getElementById('scmResultsContent');
+
+    const effectClass = result.average_treatment_effect > 0 ? 'positive' : 'negative';
+    const effectIcon = result.average_treatment_effect > 0 ? '📈' : '📉';
+
+    container.innerHTML = `
+        <!-- Métricas Principales -->
+        <div class="results-metrics">
+            <div class="metric-card">
+                <div class="metric-label">Unidad Tratada</div>
+                <div class="metric-value" style="font-size: 1.2rem;">${result.treated_unit}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Efecto Promedio ${effectIcon}</div>
+                <div class="metric-value ${effectClass}">${result.average_treatment_effect?.toFixed(4) || 'N/A'}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">RMSPE Pre-tratamiento</div>
+                <div class="metric-value">${result.pre_treatment_rmspe?.toFixed(4) || 'N/A'}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Efecto Total</div>
+                <div class="metric-value">${result.post_treatment_effect?.toFixed(4) || 'N/A'}</div>
+            </div>
+        </div>
+        
+        <!-- Interpretación -->
+        <div class="interpretation-box success">
+            ${result.interpretation.replace(/\n/g, '<br>')}
+        </div>
+        
+        <!-- Estadísticas Detalladas -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-lg);">
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">📊 Información del Análisis</h3>
+                <table style="width: 100%; font-size: 0.9rem;">
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Periodos Pre-tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.n_pre_periods || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Periodos Post-tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.n_post_periods || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Unidades de Control</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.n_control_units || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Momento del Tratamiento</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.treatment_time}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">⚖️ Pesos de las Unidades de Control</h3>
+                <div id="weightsContainer" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+        
+        <!-- Gráficos -->
+        <div style="margin-top: var(--spacing-lg);">
+            <h3 style="margin-bottom: var(--spacing-md);">📈 Series Temporales: Tratado vs. Sintético</h3>
+            <div id="scmTimeSeriesChart" style="width: 100%; height: 450px;"></div>
+        </div>
+        
+        <div style="margin-top: var(--spacing-lg);">
+            <h3 style="margin-bottom: var(--spacing-md);">📊 Pesos de las Unidades de Control</h3>
+            <div id="scmWeightsChart" style="width: 100%; height: 350px;"></div>
+        </div>
+    `;
+
+    // Renderizar tabla de pesos
+    renderWeightsTable(result.weights);
+
+    // Renderizar gráficos
+    renderSCMTimeSeries(result);
+    renderSCMWeightsChart(result.weights);
+}
+
+/**
+ * Renderiza la tabla de pesos
+ */
+function renderWeightsTable(weights) {
+    const container = document.getElementById('weightsContainer');
+    if (!weights || !container) return;
+
+    const sortedWeights = Object.entries(weights).sort((a, b) => b[1] - a[1]);
+
+    let html = '<table style="width: 100%; font-size: 0.85rem;">';
+    for (const [unit, weight] of sortedWeights) {
+        if (weight > 0.001) {
+            html += `
+                <tr>
+                    <td style="padding: var(--spacing-xs); color: var(--text-secondary);">${unit}</td>
+                    <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${(weight * 100).toFixed(2)}%</td>
+                </tr>
+            `;
+        }
+    }
+    html += '</table>';
+
+    container.innerHTML = html;
+}
+
+/**
+ * Renderiza el gráfico de series temporales del SCM
+ */
+function renderSCMTimeSeries(result) {
+    const treatmentTime = result.treatment_time;
+
+    const data = [
+        {
+            x: result.time_values,
+            y: result.treated_values,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: `${result.treated_unit} (Tratada)`,
+            line: { color: '#6366f1', width: 3 },
+            marker: { size: 6 }
+        },
+        {
+            x: result.time_values,
+            y: result.synthetic_values,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Control Sintético',
+            line: { color: '#8b5cf6', width: 3, dash: 'dash' },
+            marker: { size: 6 }
+        }
+    ];
+
+    const layout = {
+        title: {
+            text: 'Unidad Tratada vs. Control Sintético',
+            font: { size: 18, color: '#f8fafc' }
+        },
+        xaxis: {
+            title: 'Tiempo',
+            color: '#f8fafc',
+            gridcolor: '#334155'
+        },
+        yaxis: {
+            title: 'Valor',
+            color: '#f8fafc',
+            gridcolor: '#334155'
+        },
+        shapes: [{
+            type: 'line',
+            x0: treatmentTime,
+            x1: treatmentTime,
+            y0: 0,
+            y1: 1,
+            yref: 'paper',
+            line: {
+                color: '#ef4444',
+                width: 2,
+                dash: 'dot'
+            }
+        }],
+        annotations: [{
+            x: treatmentTime,
+            y: 1.02,
+            yref: 'paper',
+            text: 'Tratamiento',
+            showarrow: false,
+            font: { size: 12, color: '#ef4444' }
+        }],
+        plot_bgcolor: 'rgba(255, 255, 255, 0.03)',
+        paper_bgcolor: 'transparent',
+        font: { color: '#f8fafc' },
+        legend: {
+            orientation: 'h',
+            y: -0.15
+        }
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: true
+    };
+
+    Plotly.newPlot('scmTimeSeriesChart', data, layout, config);
+}
+
+/**
+ * Renderiza el gráfico de pesos
+ */
+function renderSCMWeightsChart(weights) {
+    if (!weights) return;
+
+    const sortedWeights = Object.entries(weights)
+        .filter(([_, w]) => w > 0.001)
+        .sort((a, b) => b[1] - a[1]);
+
+    const data = [{
+        x: sortedWeights.map(([unit, _]) => unit),
+        y: sortedWeights.map(([_, weight]) => weight * 100),
+        type: 'bar',
+        marker: {
+            color: sortedWeights.map((_, i) =>
+                `hsl(${240 + i * 10}, 70%, ${60 - i * 3}%)`
+            ),
+            line: { color: '#fff', width: 1 }
+        },
+        text: sortedWeights.map(([_, w]) => `${(w * 100).toFixed(1)}%`),
+        textposition: 'outside'
+    }];
+
+    const layout = {
+        title: {
+            text: 'Contribución de Unidades de Control',
+            font: { size: 18, color: '#f8fafc' }
+        },
+        xaxis: {
+            title: 'Unidad',
+            color: '#f8fafc',
+            gridcolor: '#334155',
+            tickangle: -45
+        },
+        yaxis: {
+            title: 'Peso (%)',
+            color: '#f8fafc',
+            gridcolor: '#334155'
+        },
+        plot_bgcolor: 'rgba(255, 255, 255, 0.03)',
+        paper_bgcolor: 'transparent',
+        font: { color: '#f8fafc' },
+        margin: { b: 100 }
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: false
+    };
+
+    Plotly.newPlot('scmWeightsChart', data, layout, config);
+}
+
+/**
+ * Muestra la sección de SCM cuando hay datasets
+ */
+function updateSCMSection() {
+    const scmSection = document.getElementById('scmSection');
+    const scmDatasetSelect = document.getElementById('scmDataset');
+
+    if (!scmSection || !scmDatasetSelect) return;
+
+    if (appState.datasets.length > 0) {
+        scmSection.classList.remove('hidden');
+
+        // Actualizar selector de datasets
+        scmDatasetSelect.innerHTML = '<option value="">Selecciona un dataset...</option>';
+        appState.datasets.forEach(dataset => {
+            scmDatasetSelect.innerHTML += `<option value="${dataset.id}">${dataset.name}</option>`;
+        });
+    }
+}
+
+// =============================================
 // Inicialización
 // =============================================
 
@@ -1089,9 +1467,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initFileUpload();
     initPreviewControls();
     initAnalysisForm();
+    initSCMForm();
 
     // Cargar datasets existentes
     await loadDatasets();
 
+    // Actualizar sección de SCM
+    updateSCMSection();
+
     console.log('✅ Aplicación lista');
 });
+
