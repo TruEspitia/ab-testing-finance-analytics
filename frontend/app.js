@@ -7,7 +7,9 @@ const API_BASE_URL = '/api';
 const appState = {
     datasets: [],
     selectedDataset: null,
-    currentPreview: null
+    currentPreview: null,
+    lastResults: null,
+    lastSCMResults: null
 };
 
 // =============================================
@@ -685,6 +687,7 @@ async function handleAnalysisSubmit() {
 }
 
 function renderResults(result) {
+    appState.lastResults = result;
     const container = document.getElementById('resultsContent');
 
     // Detectar tipo de análisis
@@ -1193,6 +1196,7 @@ function initSCMForm() {
  * Renderiza los resultados de Control Sintético
  */
 function renderSCMResults(result) {
+    appState.lastSCMResults = result;
     const container = document.getElementById('scmResultsContent');
 
     const effectClass = result.average_treatment_effect > 0 ? 'positive' : 'negative';
@@ -1475,6 +1479,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Actualizar sección de SCM
     updateSCMSection();
 
+    // Event listeners para exportación
+    document.getElementById('exportABExcel')?.addEventListener('click', () => handleExportExcel('ab_test'));
+    document.getElementById('exportSCMExcel')?.addEventListener('click', () => handleExportExcel('scm'));
+
     console.log('✅ Aplicación lista');
 });
+
+/**
+ * Maneja la exportación a Excel capturando los gráficos actuales
+ */
+async function handleExportExcel(type) {
+    const data = type === 'ab_test' ? appState.lastResults : appState.lastSCMResults;
+    if (!data) {
+        showToast('No hay resultados para exportar', 'error');
+        return;
+    }
+
+    try {
+        setLoading(true);
+        const charts = [];
+
+        if (type === 'ab_test') {
+            const img = await Plotly.toImage('plotlyChart', { format: 'png', width: 800, height: 500 });
+            charts.push(img);
+        } else {
+            const img1 = await Plotly.toImage('scmTimeSeriesChart', { format: 'png', width: 800, height: 500 });
+            const img2 = await Plotly.toImage('scmWeightsChart', { format: 'png', width: 800, height: 500 });
+            charts.push(img1, img2);
+        }
+
+        await exportResultsToExcel(type, data, charts);
+        showToast('Excel generado exitosamente', 'success');
+    } catch (error) {
+        showToast('Error al exportar: ' + error.message, 'error');
+        console.error('Export error:', error);
+    } finally {
+        setLoading(false);
+    }
+}
+
+/**
+ * Envía los datos y capturas de pantalla al backend para generar el Excel
+ */
+async function exportResultsToExcel(type, data, charts) {
+    const response = await fetch(`${API_BASE_URL}/export/excel`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            analysis_type: type,
+            data: data,
+            charts: charts
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Error en el servidor al generar el Excel');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = type === 'ab_test' ? 'AB_Test_Report.xlsx' : 'SCM_Report.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
 

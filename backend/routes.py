@@ -2,10 +2,11 @@
 Rutas de la API FastAPI
 """
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pathlib import Path
 import shutil
 import tempfile
+from datetime import datetime
 from typing import List
 
 from .models import (
@@ -17,12 +18,14 @@ from .models import (
     ErrorResponse,
     FileFormat,
     SCMConfig,
-    SCMResult
+    SCMResult,
+    ExportRequest
 )
 from .data_loader import DataLoader, DataLoaderError
 from .dataset_manager import dataset_manager
 from .ab_testing import ABTestAnalyzer
 from .synthetic_control import SyntheticControlAnalyzer
+from .report_generator import ReportGenerator
 
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -326,6 +329,35 @@ async def analyze_synthetic_control(config: SCMConfig):
             error=f"Error inesperado: {str(e)}"
         )
 
+
+@router.post("/export/excel")
+async def export_excel(request: ExportRequest):
+    """
+    Exporta los resultados de un análisis a un archivo Excel
+    
+    Args:
+        request: Datos del análisis e imágenes de gráficos
+        
+    Returns:
+        StreamingResponse con el archivo Excel
+    """
+    try:
+        if request.analysis_type == 'ab_test':
+            excel_io = ReportGenerator.generate_ab_test_report(request.data, request.charts)
+            filename = f"AB_Test_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        elif request.analysis_type == 'scm':
+            excel_io = ReportGenerator.generate_scm_report(request.data, request.charts)
+            filename = f"SCM_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        else:
+            raise HTTPException(status_code=400, detail="Tipo de análisis no soportado para exportación")
+        
+        return StreamingResponse(
+            excel_io,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al generar el reporte: {str(e)}")
 
 
 @router.get("/stats")

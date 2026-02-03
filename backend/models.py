@@ -155,3 +155,11 @@ class SCMResult(BaseModel):
     # Error si lo hay
     error: Optional[str] = None
 
+
+class ExportRequest(BaseModel):
+    """Request para exportación de resultados a Excel"""
+    analysis_type: str = Field(..., description="'ab_test' o 'scm'")
+    data: Dict[str, Any] = Field(..., description="Datos completos del resultado del análisis")
+    charts: List[str] = Field(default=[], description="Lista de imágenes de gráficos en base64")
+
+
