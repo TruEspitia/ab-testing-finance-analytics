@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, -0.5
+A1, 1
+<FORMULA>
+# a linear function
+y = A1 * x + A0
+<METADATA>
+complexity: 1

@@ -1,0 +1,7 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+x0, 1
+<FORMULA>
+# Logarithm with offset: A0 + A1*ln(x + x0)
+y = A0 + A1 * log(x + x0)

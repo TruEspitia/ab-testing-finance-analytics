@@ -1,0 +1,29 @@
+<PARAMETERS>
+Tm, 320.0000, 1
+deltaH, 2.000e+05, 1
+CpN, 0, 1
+slopeN, 0, 0
+CpU, 0.2000, 1
+slopeU, 0, 0
+A, 20.0000, 1
+<FORMULA>
+# differential scanning calorimetry
+# (A is a scale factor that depends on instrument; if known, should be fixed)
+
+# thermal denaturation transition
+R = 8.3145
+T = x
+deltaCp = CpU - CpN
+deltaG = deltaH - T / Tm * deltaH + deltaCp * (T - Tm - T * np.log(T / Tm))
+K = np.exp(-deltaG / R / T)
+fN = 1 / (1 + K)
+y = fN * (CpN + slopeN * (T - Tm)) + (1 - fN) * (CpU + slopeU * (T - Tm))
+
+# consider excess heat for actual unfolding transition
+# i.e. Cpxs = d(fN)/dT
+deriv = K * (- deltaH / R / T / T + deltaCp * (Tm / T / T - np.log10(np.exp(1)) / T))
+Cpxs = - 1 / (1 + K) ** 2 * deriv
+y = y + A * Cpxs
+
+<METADATA>
+complexity: 3

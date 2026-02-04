@@ -273,6 +273,85 @@
                 <!-- Los resultados se insertarán dinámicamente aquí -->
             </div>
         </section>
+
+        <!-- Regression / Curve Fitting Section -->
+        <section class="glass-card regression-section hidden" id="regressionSection">
+            <h2 class="section-title">
+                <span class="icon">📈</span>
+                Regresión / Curve Fitting
+            </h2>
+
+            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                Ajusta funciones matemáticas a tus datos utilizando motores de optimización avanzados.
+            </p>
+
+            <form id="regressionForm" class="analysis-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="regressionDataset">Dataset</label>
+                        <select id="regressionDataset" class="select-input" required>
+                            <option value="">Selecciona un dataset...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="xColumn">Columna X (Variable Independiente)</label>
+                        <select id="xColumn" class="select-input" required>
+                            <option value="">Selecciona columna...</option>
+                        </select>
+                        <small>Datos en el eje horizontal</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="yColumn">Columna Y (Variable Dependiente)</label>
+                        <select id="yColumn" class="select-input" required>
+                            <option value="">Selecciona columna...</option>
+                        </select>
+                        <small>Datos a ajustar en el eje vertical</small>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="functionSelect">Función Matemática</label>
+                        <select id="functionSelect" class="select-input" required>
+                            <option value="">Cargando funciones...</option>
+                        </select>
+                        <small id="functionFormula">Selecciona una función para ver su fórmula</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="engineSelect">Motor de Optimización</label>
+                        <select id="engineSelect" class="select-input" required>
+                            <option value="sequential">Sequential (Híbrido - Recomendado)</option>
+                            <option value="lm">Levenberg-Marquardt (Rápido)</option>
+                            <option value="de">Differential Evolution (Robusto)</option>
+                        </select>
+                        <small>Sequential combina DE + LM para mejor precisión</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-large">
+                    <span>📐</span> Ejecutar Regresión
+                </button>
+            </form>
+        </section>
+
+        <!-- Regression Results Section -->
+        <section class="glass-card regression-results-section hidden" id="regressionResultsSection">
+            <h2 class="section-title">
+                <span>
+                    <span class="icon">📊</span>
+                    Resultados de la Regresión
+                </span>
+            </h2>
+
+            <div id="regressionResultsContent">
+                <!-- Los resultados se insertarán dinámicamente aquí -->
+            </div>
+        </section>
     </div>
 
     <!-- Toast Notifications -->

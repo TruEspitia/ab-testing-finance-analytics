@@ -9,7 +9,9 @@ const appState = {
     selectedDataset: null,
     currentPreview: null,
     lastResults: null,
-    lastSCMResults: null
+    lastSCMResults: null,
+    lastRegressionResults: null,
+    availableFunctions: []
 };
 
 // =============================================
@@ -169,6 +171,28 @@ async function validateDataset(datasetId) {
  */
 async function fetchDatasetColumns(datasetId) {
     const response = await fetch(`${API_BASE_URL}/dataset/${datasetId}/columns`);
+    return await response.json();
+}
+
+/**
+ * Obtiene las funciones matemáticas disponibles para regresión
+ */
+async function fetchAvailableFunctions() {
+    const response = await fetch(`${API_BASE_URL}/functions`);
+    return await response.json();
+}
+
+/**
+ * Ejecuta regresión/curve fitting
+ */
+async function runRegression(config) {
+    const response = await fetch(`${API_BASE_URL}/regression`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    });
     return await response.json();
 }
 
@@ -1548,5 +1572,338 @@ async function exportResultsToExcel(type, data, charts) {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+}
+
+// =============================================
+// Regresión / Curve Fitting
+// =============================================
+
+/**
+ * Inicializa el formulario de regresión
+ */
+async function initRegressionForm() {
+    const form = document.getElementById('regressionForm');
+    const datasetSelect = document.getElementById('regressionDataset');
+    const xColumnSelect = document.getElementById('xColumn');
+    const yColumnSelect = document.getElementById('yColumn');
+    const functionSelect = document.getElementById('functionSelect');
+    const functionFormula = document.getElementById('functionFormula');
+
+    if (!form || !datasetSelect) return;
+
+    // Cargar funciones disponibles
+    try {
+        const functionsData = await fetchAvailableFunctions();
+        if (functionsData.success) {
+            appState.availableFunctions = functionsData.functions;
+            populateFunctionSelect();
+        }
+    } catch (error) {
+        console.error('Error loading functions:', error);
+    }
+
+    // Cuando se selecciona un dataset, actualizar las columnas
+    datasetSelect.addEventListener('change', () => {
+        const datasetId = datasetSelect.value;
+        if (datasetId) {
+            const dataset = appState.datasets.find(d => d.id === datasetId);
+            if (dataset) {
+                populateRegressionColumnSelects(dataset.columns);
+            }
+        } else {
+            xColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>';
+            yColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>';
+        }
+    });
+
+    // Mostrar fórmula cuando se selecciona una función
+    functionSelect.addEventListener('change', () => {
+        const funcName = functionSelect.value;
+        const func = appState.availableFunctions.find(f => f.name === funcName);
+        if (func) {
+            functionFormula.textContent = `Fórmula: ${func.formula}`;
+        } else {
+            functionFormula.textContent = 'Selecciona una función para ver su fórmula';
+        }
+    });
+
+    // Submit del formulario
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleRegressionSubmit();
+    });
+}
+
+/**
+ * Puebla los selects de columnas para regresión
+ */
+function populateRegressionColumnSelects(columns) {
+    const xColumnSelect = document.getElementById('xColumn');
+    const yColumnSelect = document.getElementById('yColumn');
+
+    [xColumnSelect, yColumnSelect].forEach(select => {
+        select.innerHTML = '<option value="">Selecciona columna...</option>';
+        columns.forEach(col => {
+            const option = document.createElement('option');
+            option.value = col;
+            option.textContent = col;
+            select.appendChild(option);
+        });
+    });
+}
+
+/**
+ * Puebla el select de funciones matemáticas
+ */
+function populateFunctionSelect() {
+    const functionSelect = document.getElementById('functionSelect');
+    if (!functionSelect) return;
+
+    functionSelect.innerHTML = '<option value="">Selecciona una función...</option>';
+
+    // Agrupar funciones por prefijo
+    const groups = {};
+    appState.availableFunctions.forEach(func => {
+        const parts = func.name.split('_');
+        const prefix = parts[0];
+        if (!groups[prefix]) {
+            groups[prefix] = [];
+        }
+        groups[prefix].push(func);
+    });
+
+    // Crear optgroups
+    Object.keys(groups).sort().forEach(groupName => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = groupName.charAt(0).toUpperCase() + groupName.slice(1);
+
+        groups[groupName].sort((a, b) => a.name.localeCompare(b.name)).forEach(func => {
+            const option = document.createElement('option');
+            option.value = func.name;
+            option.textContent = func.name.replace(/_/g, ' ');
+            optgroup.appendChild(option);
+        });
+
+        functionSelect.appendChild(optgroup);
+    });
+}
+
+/**
+ * Maneja el submit del formulario de regresión
+ */
+async function handleRegressionSubmit() {
+    const config = {
+        dataset_id: document.getElementById('regressionDataset').value,
+        x_column: document.getElementById('xColumn').value,
+        y_column: document.getElementById('yColumn').value,
+        function_name: document.getElementById('functionSelect').value,
+        engine_type: document.getElementById('engineSelect').value
+    };
+
+    // Validar
+    if (!config.dataset_id || !config.x_column || !config.y_column || !config.function_name) {
+        showToast('Por favor completa todos los campos', 'error');
+        return;
+    }
+
+    try {
+        setLoading(true);
+
+        const result = await runRegression(config);
+
+        if (result.success) {
+            appState.lastRegressionResults = result;
+            renderRegressionResults(result);
+            document.getElementById('regressionResultsSection').classList.remove('hidden');
+
+            // Scroll to results
+            document.getElementById('regressionResultsSection').scrollIntoView({
+                behavior: 'smooth'
+            });
+
+            showToast('Regresión completada', 'success');
+        } else {
+            showToast(result.error || 'Error en la regresión', 'error');
+        }
+
+    } catch (error) {
+        showToast('Error al ejecutar regresión', 'error');
+        console.error('Regression error:', error);
+    } finally {
+        setLoading(false);
+    }
+}
+
+/**
+ * Renderiza los resultados de la regresión
+ */
+function renderRegressionResults(result) {
+    const container = document.getElementById('regressionResultsContent');
+
+    const r2Class = result.r_squared >= 0.85 ? 'positive' : result.r_squared >= 0.70 ? '' : 'negative';
+
+    container.innerHTML = `
+        <div class="results-metrics">
+            <div class="metric-card">
+                <div class="metric-label">R² (Coef. Determinación)</div>
+                <div class="metric-value ${r2Class}">${result.r_squared.toFixed(4)}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">RMSE</div>
+                <div class="metric-value">${result.rmse.toFixed(4)}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Función</div>
+                <div class="metric-value" style="font-size: 1rem;">${result.function_name}</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Motor</div>
+                <div class="metric-value" style="font-size: 1rem;">${result.engine_used}</div>
+            </div>
+        </div>
+
+        <div class="interpretation-box ${result.r_squared >= 0.85 ? 'significant' : 'not-significant'}">
+            <p>${result.interpretation}</p>
+        </div>
+
+        <div class="results-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-top: var(--spacing-md);">
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">📊 Parámetros Ajustados</h3>
+                <table style="width: 100%; font-size: 0.9rem;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: var(--spacing-xs);">Parámetro</th>
+                            <th style="text-align: right; padding: var(--spacing-xs);">Valor</th>
+                            <th style="text-align: right; padding: var(--spacing-xs);">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(result.parameters).map(([name, value]) => `
+                            <tr>
+                                <td style="padding: var(--spacing-xs); color: var(--text-muted);">${name}</td>
+                                <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${value.toFixed(6)}</td>
+                                <td style="padding: var(--spacing-xs); text-align: right; color: var(--text-muted);">±${(result.errors[name] || 0).toFixed(6)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-card" style="padding: var(--spacing-md);">
+                <h3 style="margin-bottom: var(--spacing-md);">📈 Estadísticas</h3>
+                <table style="width: 100%; font-size: 0.9rem;">
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">Puntos de datos</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.original_x.length}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">R²</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${(result.r_squared * 100).toFixed(2)}%</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-xs); color: var(--text-muted);">RMSE</td>
+                        <td style="padding: var(--spacing-xs); text-align: right; font-weight: 600;">${result.rmse.toFixed(4)}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="regressionPlotlyChart" style="width: 100%; height: 450px; margin-top: var(--spacing-md);"></div>
+    `;
+
+    // Renderizar gráfico de la curva ajustada
+    renderRegressionPlotlyChart(result);
+}
+
+/**
+ * Renderiza el gráfico de Plotly para la regresión
+ */
+function renderRegressionPlotlyChart(result) {
+    const scatterTrace = {
+        x: result.original_x,
+        y: result.original_y,
+        mode: 'markers',
+        type: 'scatter',
+        name: 'Datos Originales',
+        marker: {
+            color: 'rgba(99, 102, 241, 0.7)',
+            size: 8,
+            line: {
+                color: 'rgba(99, 102, 241, 1)',
+                width: 1
+            }
+        }
+    };
+
+    const fittedTrace = {
+        x: result.fitted_x,
+        y: result.fitted_y,
+        mode: 'lines',
+        type: 'scatter',
+        name: `Ajuste: ${result.function_name}`,
+        line: {
+            color: 'rgba(236, 72, 153, 1)',
+            width: 3
+        }
+    };
+
+    const layout = {
+        title: {
+            text: `Regresión: ${result.function_name} (R² = ${result.r_squared.toFixed(4)})`,
+            font: { color: '#f3f4f6', size: 16 }
+        },
+        paper_bgcolor: 'rgba(0, 0, 0, 0)',
+        plot_bgcolor: 'rgba(0, 0, 0, 0.1)',
+        xaxis: {
+            title: 'X',
+            gridcolor: 'rgba(255, 255, 255, 0.1)',
+            zerolinecolor: 'rgba(255, 255, 255, 0.2)',
+            tickfont: { color: '#9ca3af' },
+            titlefont: { color: '#f3f4f6' }
+        },
+        yaxis: {
+            title: 'Y',
+            gridcolor: 'rgba(255, 255, 255, 0.1)',
+            zerolinecolor: 'rgba(255, 255, 255, 0.2)',
+            tickfont: { color: '#9ca3af' },
+            titlefont: { color: '#f3f4f6' }
+        },
+        legend: {
+            font: { color: '#f3f4f6' },
+            bgcolor: 'rgba(0, 0, 0, 0.3)'
+        },
+        margin: { t: 50, l: 60, r: 30, b: 50 }
+    };
+
+    const config = {
+        responsive: true,
+        displayModeBar: true,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
+    };
+
+    Plotly.newPlot('regressionPlotlyChart', [scatterTrace, fittedTrace], layout, config);
+}
+
+/**
+ * Actualiza la sección de regresión cuando hay datasets cargados
+ */
+function updateRegressionSection() {
+    const regressionSection = document.getElementById('regressionSection');
+    const regressionDatasetSelect = document.getElementById('regressionDataset');
+
+    if (!regressionSection || !regressionDatasetSelect) return;
+
+    if (appState.datasets.length > 0) {
+        regressionSection.classList.remove('hidden');
+
+        // Actualizar selector de datasets
+        regressionDatasetSelect.innerHTML = '<option value="">Selecciona un dataset...</option>';
+        appState.datasets.forEach(dataset => {
+            regressionDatasetSelect.innerHTML += `<option value="${dataset.id}">${dataset.name}</option>`;
+        });
+    }
 }
 

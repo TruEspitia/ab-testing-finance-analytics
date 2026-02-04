@@ -163,3 +163,51 @@ class ExportRequest(BaseModel):
     charts: List[str] = Field(default=[], description="Lista de imágenes de gráficos en base64")
 
 
+# =============================================
+# Modelos para Regresión / Curve Fitting
+# =============================================
+
+class FunctionInfo(BaseModel):
+    """Información de una función matemática disponible"""
+    name: str
+    parameters: Dict[str, float]
+    formula: str
+    complexity: int = 1
+
+
+class RegressionConfig(BaseModel):
+    """Configuración para análisis de regresión/curve fitting"""
+    dataset_id: str
+    x_column: str = Field(..., description="Columna con los valores X")
+    y_column: str = Field(..., description="Columna con los valores Y")
+    function_name: str = Field(..., description="Nombre de la función a ajustar")
+    engine_type: str = Field(default="sequential", description="Motor: 'lm', 'de', o 'sequential'")
+
+
+class RegressionResult(BaseModel):
+    """Resultados del análisis de regresión"""
+    success: bool
+    dataset_id: str
+    function_name: str
+    engine_used: str
+    
+    # Parámetros ajustados
+    parameters: Optional[Dict[str, float]] = None
+    errors: Optional[Dict[str, float]] = None
+    
+    # Métricas
+    r_squared: Optional[float] = None
+    rmse: Optional[float] = None
+    
+    # Datos para visualización
+    fitted_x: Optional[List[float]] = None
+    fitted_y: Optional[List[float]] = None
+    original_x: Optional[List[float]] = None
+    original_y: Optional[List[float]] = None
+    residuals: Optional[List[float]] = None
+    
+    # Interpretación
+    interpretation: str = ""
+    
+    # Error si lo hay
+    error: Optional[str] = None

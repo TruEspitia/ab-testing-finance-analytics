@@ -1,0 +1,13 @@
+<PARAMETERS>
+A0, 1.0000, 1
+A1, -1.0000, 1
+k1, 1.0000, 1
+A2, 1.0000, 1
+k2, 5.0000, 1
+A3, -2.0000, 1
+k3, 1.2000, 1
+<FORMULA>
+# a triple exponential function
+y = A0 + A1 * exp(-k1 * x) + A2 * exp(-k2 * x)  + A3 * exp(-k3 * x)
+<METADATA>
+complexity: 1

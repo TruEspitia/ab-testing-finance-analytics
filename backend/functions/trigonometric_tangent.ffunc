@@ -1,0 +1,7 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+omega, 1
+<FORMULA>
+# Tangent function: A0 + A1*tan(omega*x)
+y = A0 + A1 * np.tan(omega * x)

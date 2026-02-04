@@ -1,0 +1,9 @@
+<PARAMETERS>
+h, 1.0000, 1
+w, 0.2000, 1
+x0, 0.5000, 1
+<FORMULA>
+# a Gaussian lineshape
+y = h / (w * (2 * np.pi) ** 0.5) * exp(-0.5 * ((x - x0) / w) ** 2)
+<METADATA>
+complexity: 2

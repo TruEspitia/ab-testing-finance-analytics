@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+omega, 1
+phi, 0
+<FORMULA>
+# Cosine wave function: A0 + A1*cos(omega*x + phi)
+y = A0 + A1 * cos(omega * x + phi)

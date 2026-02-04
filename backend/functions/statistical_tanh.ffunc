@@ -1,0 +1,7 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+x0, 0
+<FORMULA>
+# Hyperbolic tangent: A0 + A1*tanh(x - x0)
+y = A0 + A1 * np.tanh(x - x0)
