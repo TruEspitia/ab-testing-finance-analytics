@@ -1509,6 +1509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event listeners para exportación
     document.getElementById('exportABExcel')?.addEventListener('click', () => handleExportExcel('ab_test'));
     document.getElementById('exportSCMExcel')?.addEventListener('click', () => handleExportExcel('scm'));
+    document.getElementById('exportRegressionExcel')?.addEventListener('click', () => handleExportExcel('regression'));
 
     console.log('✅ Aplicación lista');
 });
@@ -1517,7 +1518,15 @@ document.addEventListener('DOMContentLoaded', async () => {
  * Maneja la exportación a Excel capturando los gráficos actuales
  */
 async function handleExportExcel(type) {
-    const data = type === 'ab_test' ? appState.lastResults : appState.lastSCMResults;
+    let data;
+    if (type === 'ab_test') {
+        data = appState.lastResults;
+    } else if (type === 'scm') {
+        data = appState.lastSCMResults;
+    } else if (type === 'regression') {
+        data = appState.lastRegressionResults;
+    }
+
     if (!data) {
         showToast('No hay resultados para exportar', 'error');
         return;
@@ -1530,10 +1539,13 @@ async function handleExportExcel(type) {
         if (type === 'ab_test') {
             const img = await Plotly.toImage('plotlyChart', { format: 'png', width: 800, height: 500 });
             charts.push(img);
-        } else {
+        } else if (type === 'scm') {
             const img1 = await Plotly.toImage('scmTimeSeriesChart', { format: 'png', width: 800, height: 500 });
             const img2 = await Plotly.toImage('scmWeightsChart', { format: 'png', width: 800, height: 500 });
             charts.push(img1, img2);
+        } else if (type === 'regression') {
+            const img = await Plotly.toImage('regressionPlotlyChart', { format: 'png', width: 800, height: 500 });
+            charts.push(img);
         }
 
         await exportResultsToExcel(type, data, charts);
@@ -1570,7 +1582,17 @@ async function exportResultsToExcel(type, data, charts) {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = type === 'ab_test' ? 'AB_Test_Report.xlsx' : 'SCM_Report.xlsx';
+
+    let filename = 'Report.xlsx';
+    if (type === 'ab_test') {
+        filename = 'AB_Test_Report.xlsx';
+    } else if (type === 'scm') {
+        filename = 'SCM_Report.xlsx';
+    } else if (type === 'regression') {
+        filename = 'Regression_Report.xlsx';
+    }
+
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

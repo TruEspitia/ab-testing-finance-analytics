@@ -49,14 +49,20 @@ class FitResult:
             params_dict = {}
             if isinstance(self.parameters, dict):
                 for k, v in self.parameters.items():
-                    params_dict[str(k)] = float(v) if v is not None else 0.0
+                    try:
+                        params_dict[str(k)] = float(v) if v is not None else 0.0
+                    except (TypeError, ValueError):
+                        params_dict[str(k)] = 0.0
             
             errors_dict = {}
             if isinstance(self.errors, dict):
                 for k, v in self.errors.items():
-                    errors_dict[str(k)] = float(v) if v is not None else 0.0
-        except (TypeError, ValueError) as e:
-            self.logger.warning(f"Type conversion error in to_dict: {e}")
+                    try:
+                        errors_dict[str(k)] = float(v) if v is not None else 0.0
+                    except (TypeError, ValueError):
+                        errors_dict[str(k)] = 0.0
+        except Exception:
+            # Fallback if anything goes wrong
             params_dict = {}
             errors_dict = {}
         

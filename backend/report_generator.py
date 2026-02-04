@@ -166,3 +166,77 @@ class ReportGenerator:
         workbook.close()
         output.seek(0)
         return output
+
+    @staticmethod
+    def generate_regression_report(data: Dict[str, Any], chart_images: List[str]) -> io.BytesIO:
+        """
+        Genera un Excel con los resultados de Curve Fitting / Regresión.
+        """
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Regresión')
+        
+        # Estilos
+        title_fmt = workbook.add_format({'bold': True, 'size': 16, 'font_color': '#10b981'})
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#ecfdf5', 'border': 1})
+        label_fmt = workbook.add_format({'font_color': '#64748b'})
+        param_fmt = workbook.add_format({'num_format': '0.0000', 'align': 'right'})
+        metric_fmt = workbook.add_format({'num_format': '0.0000', 'bold': True})
+        
+        # Título
+        sheet.write('A1', 'Informe de Regresión / Curve Fitting', title_fmt)
+        sheet.write('A2', f'Fecha de generación: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', label_fmt)
+        
+        # Información básica
+        sheet.write('A4', 'Configuración del Análisis', header_fmt)
+        sheet.write('A5', 'Dataset ID:', label_fmt)
+        sheet.write('B5', data.get('dataset_id', 'N/A'))
+        sheet.write('A6', 'Función:', label_fmt)
+        sheet.write('B6', data.get('function_name', 'N/A'))
+        sheet.write('A7', 'Motor de Optimización:', label_fmt)
+        sheet.write('B7', data.get('engine_used', 'N/A'))
+        
+        # Métricas de calidad
+        sheet.write('A9', 'Métricas de Ajuste', header_fmt)
+        sheet.write('A10', 'R² (Coeficiente de Determinación):', label_fmt)
+        sheet.write('B10', data.get('r_squared', 0), metric_fmt)
+        sheet.write('A11', 'RMSE (Error Cuadrático Medio):', label_fmt)
+        sheet.write('B11', data.get('rmse', 0), metric_fmt)
+        
+        # Parámetros ajustados
+        sheet.write('A13', 'Parámetros Ajustados', header_fmt)
+        sheet.write('B13', 'Valor', header_fmt)
+        sheet.write('C13', 'Error', header_fmt)
+        
+        parameters = data.get('parameters', {})
+        errors = data.get('errors', {})
+        row = 14
+        for param_name in sorted(parameters.keys()):
+            sheet.write(f'A{row}', param_name, label_fmt)
+            sheet.write(f'B{row}', parameters.get(param_name, 0), param_fmt)
+            sheet.write(f'C{row}', errors.get(param_name, 0), param_fmt)
+            row += 1
+        
+        # Interpretación
+        row += 1
+        sheet.write(f'A{row}', 'Interpretación', header_fmt)
+        sheet.merge_range(f'A{row+1}:E{row+4}', data.get('interpretation', ''), 
+                          workbook.add_format({'text_wrap': True, 'align': 'top'}))
+        
+        # Imágenes de los gráficos
+        img_row = 4
+        for i, img_data in enumerate(chart_images):
+            if img_data:
+                if ',' in img_data:
+                    header, encoded = img_data.split(',', 1)
+                else:
+                    encoded = img_data
+                
+                image_bytes = io.BytesIO(base64.b64decode(encoded))
+                sheet.insert_image(f'G{img_row}', f'regression_chart_{i}.png', 
+                                   {'image_data': image_bytes, 'x_scale': 0.6, 'y_scale': 0.6})
+                img_row += 20
+        
+        workbook.close()
+        output.seek(0)
+        return output

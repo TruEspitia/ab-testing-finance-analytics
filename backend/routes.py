@@ -350,6 +350,9 @@ async def export_excel(request: ExportRequest):
         elif request.analysis_type == 'scm':
             excel_io = ReportGenerator.generate_scm_report(request.data, request.charts)
             filename = f"SCM_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        elif request.analysis_type == 'regression':
+            excel_io = ReportGenerator.generate_regression_report(request.data, request.charts)
+            filename = f"Regression_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         else:
             raise HTTPException(status_code=400, detail="Tipo de análisis no soportado para exportación")
         

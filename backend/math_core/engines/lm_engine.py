@@ -149,7 +149,8 @@ class LMEngine(BaseEngine):
             
             for i in range(self.n_starts - len(guesses)):
                 guess = {}
-                for param_name, param_info in model.parameters.items():
+                for param_name, default_value in model.parameters.items():
+                    # default_value is already a float, not a dict
                     if 'amplitude' in param_name.lower() or 'a' in param_name.lower():
                         guess[param_name] = y_std * (1 + 0.5 * i)
                     elif 'offset' in param_name.lower() or 'c' in param_name.lower():
@@ -160,11 +161,12 @@ class LMEngine(BaseEngine):
                         guess[param_name] = x_range / (5 + 2 * i)
                     else:
                         # Valor por defecto con variación
-                        guess[param_name] = param_info.get('default', 1.0) * (0.5 + i * 0.5)
+                        guess[param_name] = default_value * (0.5 + i * 0.5)
                 
                 guesses.append(guess)
         
         return guesses if guesses else [{}]
+
     
     def _prepare_scipy_bounds(self, model, options):
         """Convierte bounds del modelo al formato de scipy."""
