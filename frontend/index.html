@@ -56,6 +56,20 @@
                         </li>
                     </ul>
                 </div>
+                <div class="nav-group">
+                    <div class="nav-title">
+                        <span class="material-icons" style="font-size: 14px;">support</span>
+                        <span>Ayuda</span>
+                    </div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#" class="nav-item" id="startTourBtn">
+                                <span class="material-icons">help_outline</span>
+                                <span>Iniciar Tour</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
@@ -132,6 +146,53 @@
                             <p>No hay datasets cargados</p>
                             <p class="empty-hint">Sube un archivo para comenzar</p>
                         </div>
+                    </div>
+                </section>
+
+                <!-- Data Health Check Section (Common) -->
+                <section class="glass-card health-check-section hidden" id="healthCheckSection">
+                    <h2 class="section-title">
+                        <span class="icon">🩺</span>
+                        Estado de Salud de Datos
+                    </h2>
+
+                    <div id="healthCheckContent" class="health-check-grid">
+                        <div class="health-score-container">
+                            <div class="health-outer-circle">
+                                <div class="health-inner-circle">
+                                    <span id="healthScoreValue">--</span>
+                                    <span class="health-score-label">Salud</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="health-metrics">
+                            <div class="metric-card">
+                                <span class="metric-icon">🚫</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Nulos</span>
+                                    <span class="metric-value" id="nullCount">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-icon">🔄</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Duplicados</span>
+                                    <span class="metric-value" id="duplicateCount">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-icon">📊</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Columnas</span>
+                                    <span class="metric-value" id="healthColCount">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="health-suggestions" id="healthSuggestions">
+                        <!-- Sugerencias se cargarán aquí -->
                     </div>
                 </section>
 

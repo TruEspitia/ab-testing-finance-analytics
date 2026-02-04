@@ -1159,3 +1159,196 @@ body {
         min-width: auto;
     }
 }
+
+/* ======================================
+   Health Check Styles
+   ====================================== */
+.health-check-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: var(--spacing-xl);
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.health-score-container {
+    display: flex;
+    justify-content: center;
+}
+
+.health-outer-circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary) 0%, var(--glass-border) 0%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    transition: all 1s ease-out;
+}
+
+.health-inner-circle {
+    width: 125px;
+    height: 125px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+
+#healthScoreValue {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.health-score-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.health-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.metric-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.metric-icon {
+    font-size: 1.5rem;
+}
+
+.metric-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.health-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.suggestion-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid var(--warning);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 0.9rem;
+}
+
+.suggestion-item.info {
+    border-left-color: var(--info);
+}
+
+.suggestion-item.success {
+    border-left-color: var(--success);
+}
+
+.suggestion-item.error {
+    border-left-color: var(--error);
+}
+
+
+/* ======================================
+   Guided Tour Styles
+   ====================================== */
+.tour-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.tour-highlighter {
+    position: absolute;
+    border: 3px solid var(--primary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.tour-tooltip {
+    position: fixed;
+    background: var(--bg-darker);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    width: 350px;
+    box-shadow: var(--glass-shadow);
+    z-index: 1002;
+    pointer-events: auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.tour-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.tour-step-counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.tour-title {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.tour-content {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.5;
+}
+
+.tour-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+}
+
+.tour-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}

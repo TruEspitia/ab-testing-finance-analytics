@@ -362,6 +362,11 @@ async function handleFileUpload(file) {
             document.getElementById('previewSection').classList.remove('hidden');
             document.getElementById('analysisSection').classList.remove('hidden');
 
+            // Nueva función: Health Check
+            if (result.dataset && result.dataset.id) {
+                await runHealthCheck(result.dataset.id);
+            }
+
         } else {
             showToast(result.error || 'Error al cargar archivo', 'error');
         }
@@ -443,6 +448,11 @@ async function handleBatchUpload(files) {
             // Mostrar secciones
             document.getElementById('previewSection').classList.remove('hidden');
             document.getElementById('analysisSection').classList.remove('hidden');
+
+            // Ejecutar health check para el primer dataset del lote
+            if (result.results && result.results.length > 0 && result.results[0].dataset) {
+                await runHealthCheck(result.results[0].dataset.id);
+            }
         }
 
         if (result.failed > 0) {
@@ -612,6 +622,58 @@ async function updateStats() {
     }
 }
 
+/**
+ * Ejecuta y muestra el Health Check de un dataset
+ */
+async function runHealthCheck(datasetId) {
+    const section = document.getElementById('healthCheckSection');
+    const suggestionsContainer = document.getElementById('healthSuggestions');
+    const scoreElement = document.getElementById('healthScoreValue');
+    const circle = document.querySelector('.health-outer-circle');
+
+    try {
+        if (!section) return;
+
+        section.classList.remove('hidden');
+        suggestionsContainer.innerHTML = '<p class="loading-text">Analizando calidad de datos...</p>';
+
+        const report = await validateDataset(datasetId);
+
+        // Actualizar métricas básicas
+        document.getElementById('nullCount').textContent = report.quality_report.null_values.total_nulls;
+        document.getElementById('duplicateCount').textContent = report.quality_report.duplicate_rows;
+        document.getElementById('healthColCount').textContent = Object.keys(report.column_types).length;
+
+        // Calcular score (simplificado)
+        let score = 100;
+        const totalRows = report.quality_report.total_rows || 1000;
+        const nullRate = report.quality_report.null_values.total_nulls / (totalRows * Object.keys(report.column_types).length || 1);
+
+        score -= nullRate * 100;
+        if (report.quality_report.duplicate_rows > 0) score -= 10;
+        score = Math.max(0, Math.min(100, Math.round(score)));
+
+        // Animar círculo y score
+        scoreElement.textContent = score;
+        circle.style.background = `conic-gradient(var(--primary) ${score}%, var(--glass-border) 0%)`;
+
+        // Renderizar sugerencias
+        if (report.suggestions && report.suggestions.length > 0) {
+            suggestionsContainer.innerHTML = report.suggestions.map(s => `
+                <div class="suggestion-item ${s.type || 'info'}">
+                    <strong>${s.column || 'Global'}:</strong> ${s.message}
+                </div>
+            `).join('');
+        } else {
+            suggestionsContainer.innerHTML = '<div class="suggestion-item success">✅ No se detectaron problemas críticos de calidad.</div>';
+        }
+
+    } catch (error) {
+        console.error('Health check error:', error);
+        showToast('Error al ejecutar health check', 'error');
+    }
+}
+
 // =============================================
 // Preview de Datos
 // =============================================
@@ -629,6 +691,9 @@ async function loadDatasetPreview(datasetId) {
 
         // Actualizar selector de preview
         document.getElementById('datasetSelector').value = datasetId;
+
+        // Refresh Health Check
+        await runHealthCheck(datasetId);
 
         showToast('Preview cargado', 'success');
 
@@ -1614,8 +1679,165 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('exportSCMExcel')?.addEventListener('click', () => handleExportExcel('scm'));
     document.getElementById('exportRegressionExcel')?.addEventListener('click', () => handleExportExcel('regression'));
 
+    // Inicializar Tour
+    document.getElementById('startTourBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.appGuide.start();
+    });
+
+    window.appGuide = new Guide([
+        {
+            title: "¡Bienvenido a Finance Analytics!",
+            content: "Este tour te guiará por las funciones principales de la herramienta para que aproveches al máximo tus análisis financieros.",
+            target: null
+        },
+        {
+            title: "Carga de Datos",
+            content: "Aquí puedes subir tus archivos CSV, Excel o JSON. Puedes arrastrar varios archivos a la vez.",
+            target: "#uploadArea"
+        },
+        {
+            title: "Gestión de Datasets",
+            content: "Una vez cargados, tus archivos aparecerán aquí. Puedes previsualizarlos o eliminarlos.",
+            target: ".datasets-section"
+        },
+        {
+            title: "Análisis Disponibles",
+            content: "Cambia entre A/B Testing, Control Sintético o Regresión usando el menú lateral.",
+            target: ".sidebar-nav"
+        },
+        {
+            title: "Configuración y Resultados",
+            content: "Configura los parámetros de tu análisis y visualiza resultados interactivos con gráficos de alta calidad.",
+            target: ".main-content"
+        }
+    ]);
+
     console.log('✅ Aplicación lista');
 });
+
+/**
+ * Clase Guide para el Onboarding interactivo
+ */
+class Guide {
+    constructor(steps) {
+        this.steps = steps;
+        this.currentStep = 0;
+        this.overlay = null;
+        this.highlighter = null;
+        this.tooltip = null;
+    }
+
+    start() {
+        this.currentStep = 0;
+        this.createUI();
+        this.showStep();
+        if (document.getElementById('sidebar').classList.contains('collapsed')) {
+            document.getElementById('toggleSidebar').click();
+        }
+    }
+
+    createUI() {
+        if (this.overlay) return;
+
+        this.overlay = document.createElement('div');
+        this.overlay.className = 'tour-overlay';
+
+        this.highlighter = document.createElement('div');
+        this.highlighter.className = 'tour-highlighter';
+
+        this.tooltip = document.createElement('div');
+        this.tooltip.className = 'tour-tooltip';
+
+        document.body.appendChild(this.overlay);
+        document.body.appendChild(this.highlighter);
+        document.body.appendChild(this.tooltip);
+    }
+
+    showStep() {
+        const step = this.steps[this.currentStep];
+        const target = step.target ? document.querySelector(step.target) : null;
+
+        // Actualizar Tooltip
+        this.tooltip.innerHTML = `
+            <div class="tour-header">
+                <span class="tour-step-counter">Paso ${this.currentStep + 1} de ${this.steps.length}</span>
+                <button class="icon-btn" onclick="appGuide.stop()" style="padding:0; height:20px; width:20px;">
+                    <span class="material-icons" style="font-size:16px;">close</span>
+                </button>
+            </div>
+            <div class="tour-title">${step.title}</div>
+            <div class="tour-content">${step.content}</div>
+            <div class="tour-footer">
+                <button class="btn btn-secondary btn-small" onclick="appGuide.stop()">Saltar</button>
+                <div class="tour-actions">
+                    ${this.currentStep > 0 ? '<button class="btn btn-secondary btn-small" onclick="appGuide.prev()">Anterior</button>' : ''}
+                    <button class="btn btn-primary btn-small" onclick="appGuide.next()">
+                        ${this.currentStep === this.steps.length - 1 ? 'Finalizar' : 'Siguiente'}
+                    </button>
+                </div>
+            </div>
+        `;
+
+        if (target) {
+            const rect = target.getBoundingClientRect();
+            const padding = 10;
+
+            this.highlighter.style.display = 'block';
+            this.highlighter.style.top = `${rect.top + window.scrollY - padding}px`;
+            this.highlighter.style.left = `${rect.left + window.scrollX - padding}px`;
+            this.highlighter.style.width = `${rect.width + (padding * 2)}px`;
+            this.highlighter.style.height = `${rect.height + (padding * 2)}px`;
+
+            // Posicionar tooltip cerca del target
+            let top = rect.bottom + 20;
+            let left = rect.left;
+
+            if (top + 250 > window.innerHeight) {
+                top = rect.top - 270;
+            }
+            if (left + 350 > window.innerWidth) {
+                left = window.innerWidth - 370;
+            }
+
+            this.tooltip.style.top = `${top}px`;
+            this.tooltip.style.left = `${Math.max(20, left)}px`;
+
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            this.highlighter.style.display = 'none';
+            this.tooltip.style.top = '50%';
+            this.tooltip.style.left = '50%';
+            this.tooltip.style.transform = 'translate(-50%, -50%)';
+        }
+    }
+
+    next() {
+        if (this.currentStep < this.steps.length - 1) {
+            this.currentStep++;
+            this.showStep();
+        } else {
+            this.stop();
+        }
+    }
+
+    prev() {
+        if (this.currentStep > 0) {
+            this.currentStep--;
+            this.showStep();
+        }
+    }
+
+    stop() {
+        this.overlay?.remove();
+        this.highlighter?.remove();
+        this.tooltip?.remove();
+        this.overlay = null;
+        this.highlighter = null;
+        this.tooltip = null;
+        showToast("Tour finalizado", "success");
+    }
+}
 
 /**
  * Maneja la exportación a Excel capturando los gráficos actuales
