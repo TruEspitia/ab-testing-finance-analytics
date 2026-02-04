@@ -12,7 +12,8 @@ const appState = {
     lastSCMResults: null,
     lastRegressionResults: null,
     availableFunctions: [],
-    currentView: 'ab-testing' // Por defecto
+    currentView: 'ab-testing', // Por defecto
+    theme: localStorage.getItem('theme') || 'dark'
 };
 
 // =============================================
@@ -1551,6 +1552,40 @@ function updateSCMSection() {
     }
 }
 
+/**
+ * Inicializa el cambio de tema (Oscuro/Claro)
+ */
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (!themeToggle) return;
+
+    // Aplicar tema guardado al inicio
+    if (appState.theme === 'light') {
+        document.body.classList.add('light-theme');
+        themeToggle.querySelector('.material-icons').textContent = 'light_mode';
+    }
+
+    themeToggle.addEventListener('click', () => {
+        const isDark = !document.body.classList.contains('light-theme');
+
+        if (isDark) {
+            // Pasar a claro
+            document.body.classList.add('light-theme');
+            appState.theme = 'light';
+            themeToggle.querySelector('.material-icons').textContent = 'light_mode';
+            showToast('Tema claro activado', 'info');
+        } else {
+            // Pasar a oscuro
+            document.body.classList.remove('light-theme');
+            appState.theme = 'dark';
+            themeToggle.querySelector('.material-icons').textContent = 'dark_mode';
+            showToast('Tema oscuro activado', 'info');
+        }
+
+        localStorage.setItem('theme', appState.theme);
+    });
+}
+
 // =============================================
 // Inicialización
 // =============================================
@@ -1564,6 +1599,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initPreviewControls();
     initAnalysisForm();
     initSCMForm();
+    initThemeToggle();
     await initRegressionForm();
 
     // Cargar datasets existentes

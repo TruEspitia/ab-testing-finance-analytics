@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A/B Testing Finance Analytics</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -74,15 +76,20 @@
                 <div class="view-title">
                     <h1 id="currentViewTitle">Análisis A/B</h1>
                 </div>
-                <div class="top-bar-stats" id="statsBar">
-                    <div class="stat-pill">
-                        <span class="pill-label">Datasets:</span>
-                        <span class="pill-value" id="datasetCount">0</span>
+                <div class="top-bar-actions">
+                    <div class="top-bar-stats" id="statsBar">
+                        <div class="stat-pill">
+                            <span class="pill-label">Datasets:</span>
+                            <span class="pill-value" id="datasetCount">0</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="pill-label">Memoria:</span>
+                            <span class="pill-value" id="memoryUsage">0 MB</span>
+                        </div>
                     </div>
-                    <div class="stat-pill">
-                        <span class="pill-label">Memoria:</span>
-                        <span class="pill-value" id="memoryUsage">0 MB</span>
-                    </div>
+                    <button id="themeToggle" class="theme-toggle-btn" title="Cambiar tema">
+                        <span class="material-icons">dark_mode</span>
+                    </button>
                 </div>
             </header>
 
