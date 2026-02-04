@@ -414,6 +414,7 @@ async function loadDatasets() {
         updateDatasetSelectors();
         await updateStats();
         updateSCMSection();
+        updateRegressionSection();
 
     } catch (error) {
         showToast('Error al cargar datasets', 'error');
@@ -1496,12 +1497,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initPreviewControls();
     initAnalysisForm();
     initSCMForm();
+    await initRegressionForm();
 
     // Cargar datasets existentes
     await loadDatasets();
 
-    // Actualizar sección de SCM
+    // Actualizar sección de SCM y Regresión
     updateSCMSection();
+    updateRegressionSection();
 
     // Event listeners para exportación
     document.getElementById('exportABExcel')?.addEventListener('click', () => handleExportExcel('ab_test'));
