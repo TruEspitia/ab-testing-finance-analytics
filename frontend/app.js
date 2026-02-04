@@ -11,8 +11,74 @@ const appState = {
     lastResults: null,
     lastSCMResults: null,
     lastRegressionResults: null,
-    availableFunctions: []
+    availableFunctions: [],
+    currentView: 'ab-testing' // Por defecto
 };
+
+// =============================================
+// Navegación
+// =============================================
+
+/**
+ * Cambia la vista activa del sistema
+ */
+function switchView(viewId) {
+    // 1. Ocultar todas las vistas
+    document.querySelectorAll('.analysis-view').forEach(view => {
+        view.classList.add('hidden');
+    });
+
+    // 2. Mostrar la seleccionada
+    const targetView = document.getElementById(`view-${viewId}`);
+    if (targetView) {
+        targetView.classList.remove('hidden');
+        appState.currentView = viewId;
+    }
+
+    // 3. Actualizar estado del sidebar
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.view === viewId) {
+            item.classList.add('active');
+        }
+    });
+
+    // 4. Actualizar título en top-bar
+    const titleMap = {
+        'ab-testing': 'Análisis A/B',
+        'scm': 'Pruebas de Control (SCM)',
+        'regression': 'Regresión / Curve Fitting'
+    };
+    document.getElementById('currentViewTitle').textContent = titleMap[viewId] || 'Análisis';
+
+    showToast(`Cambiado a ${titleMap[viewId]}`, 'info');
+}
+
+/**
+ * Inicializa los eventos del sidebar y navegación
+ */
+function initNavigation() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggleSidebar');
+
+    // Toggle sidebar
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    }
+
+    // Nav items click
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const viewId = item.dataset.view;
+            if (viewId) {
+                switchView(viewId);
+            }
+        });
+    });
+}
 
 // =============================================
 // Utilidades
@@ -1493,6 +1559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Iniciando aplicación...');
 
     // Inicializar componentes
+    initNavigation();
     initFileUpload();
     initPreviewControls();
     initAnalysisForm();

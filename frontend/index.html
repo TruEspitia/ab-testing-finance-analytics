@@ -7,354 +7,415 @@
     <title>A/B Testing Finance Analytics</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
 <body>
     <!-- Background gradient -->
     <div class="gradient-bg"></div>
 
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Header -->
-        <header class="header-section">
-            <div class="header-content">
-                <h1 class="title">
-                    <span class="icon">📊</span>
-                    A/B Testing Finance Analytics
-                </h1>
-                <p class="subtitle">Análisis estadístico profesional con soporte multi-formato</p>
-            </div>
-            <div class="stats-bar" id="statsBar">
-                <div class="stat-item">
-                    <span class="stat-label">Datasets</span>
-                    <span class="stat-value" id="datasetCount">0</span>
+    <div class="app-shell">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <span class="logo-text">Finance Analytics</span>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">Memoria</span>
-                    <span class="stat-value" id="memoryUsage">0 MB</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Upload Section -->
-        <section class="glass-card upload-section">
-            <h2 class="section-title">
-                <span class="icon">📤</span>
-                Cargar Datos
-            </h2>
-
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
-                <h3>Arrastra y suelta tus archivos aquí</h3>
-                <p>o haz clic para seleccionar</p>
-                <p class="supported-formats">✨ Puedes seleccionar múltiples archivos</p>
-                <p class="supported-formats">Formatos soportados: CSV, XLSX, JSON</p>
-                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" multiple hidden>
-            </div>
-
-            <div class="upload-progress hidden" id="uploadProgress">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <p class="progress-text" id="progressText">Cargando...</p>
-            </div>
-        </section>
-
-        <!-- Datasets List Section -->
-        <section class="glass-card datasets-section">
-            <h2 class="section-title">
-                <span class="icon">💾</span>
-                Datasets Cargados
-            </h2>
-
-            <div class="datasets-list" id="datasetsList">
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <p>No hay datasets cargados</p>
-                    <p class="empty-hint">Sube un archivo para comenzar</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Data Preview Section -->
-        <section class="glass-card preview-section hidden" id="previewSection">
-            <h2 class="section-title">
-                <span class="icon">👁️</span>
-                Vista Previa de Datos
-            </h2>
-
-            <div class="preview-controls">
-                <select id="datasetSelector" class="select-input">
-                    <option value="">Selecciona un dataset...</option>
-                </select>
-                <button class="btn btn-secondary" id="refreshPreviewBtn">
-                    <span>🔄</span> Actualizar
+                <button id="toggleSidebar" class="icon-btn">
+                    <span class="material-icons">menu</span>
                 </button>
             </div>
 
-            <div class="table-container" id="tableContainer">
-                <table class="data-table" id="dataTable">
-                    <thead id="tableHead"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <div class="nav-title">
+                        <span class="material-icons">work_outline</span>
+                        <span>Opciones de trabajo</span>
+                    </div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#" class="nav-item active" data-view="ab-testing" id="nav-ab">
+                                <span class="material-icons">analytics</span>
+                                <span>Análisis A/B</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="scm" id="nav-scm">
+                                <span class="material-icons">science</span>
+                                <span>Pruebas de Control</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="regression" id="nav-regression">
+                                <span class="material-icons">show_chart</span>
+                                <span>Regresiones</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">ME</div>
+                    <div class="user-info">
+                        <span class="user-name">Miguel Espitia</span>
+                        <span class="user-role">ADMINISTRADOR</span>
+                    </div>
+                </div>
             </div>
+        </aside>
 
-            <div class="preview-info" id="previewInfo"></div>
-        </section>
+        <!-- Main Content Wrapper -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="view-title">
+                    <h1 id="currentViewTitle">Análisis A/B</h1>
+                </div>
+                <div class="top-bar-stats" id="statsBar">
+                    <div class="stat-pill">
+                        <span class="pill-label">Datasets:</span>
+                        <span class="pill-value" id="datasetCount">0</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="pill-label">Memoria:</span>
+                        <span class="pill-value" id="memoryUsage">0 MB</span>
+                    </div>
+                </div>
+            </header>
 
-        <!-- Analysis Configuration Section -->
-        <section class="glass-card analysis-section hidden" id="analysisSection">
-            <h2 class="section-title">
-                <span class="icon">⚙️</span>
-                Configuración del Análisis A/B
-            </h2>
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Upload Section (Common) -->
+                <section class="glass-card upload-section">
+                    <h2 class="section-title">
+                        <span class="icon">📤</span>
+                        Cargar Datos
+                    </h2>
 
-            <form id="analysisForm" class="analysis-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="analysisDataset">Dataset</label>
-                        <select id="analysisDataset" class="select-input" required>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <h3>Arrastra y suelta tus archivos aquí</h3>
+                        <p>o haz clic para seleccionar</p>
+                        <p class="supported-formats">✨ Puedes seleccionar múltiples archivos</p>
+                        <p class="supported-formats">Formatos soportados: CSV, XLSX, JSON</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" multiple hidden>
+                    </div>
+
+                    <div class="upload-progress hidden" id="uploadProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Cargando...</p>
+                    </div>
+                </section>
+
+                <!-- Datasets List Section (Common) -->
+                <section class="glass-card datasets-section">
+                    <h2 class="section-title">
+                        <span class="icon">💾</span>
+                        Datasets Cargados
+                    </h2>
+
+                    <div class="datasets-list" id="datasetsList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No hay datasets cargados</p>
+                            <p class="empty-hint">Sube un archivo para comenzar</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Preview Section (Common) -->
+                <section class="glass-card preview-section hidden" id="previewSection">
+                    <h2 class="section-title">
+                        <span class="icon">👁️</span>
+                        Vista Previa de Datos
+                    </h2>
+
+                    <div class="preview-controls">
+                        <select id="datasetSelector" class="select-input">
                             <option value="">Selecciona un dataset...</option>
                         </select>
+                        <button class="btn btn-secondary" id="refreshPreviewBtn">
+                            <span>🔄</span> Actualizar
+                        </button>
                     </div>
+
+                    <div class="table-container" id="tableContainer">
+                        <table class="data-table" id="dataTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="preview-info" id="previewInfo"></div>
+                </section>
+
+                <!-- ANALYSIS VIEWS -->
+
+                <!-- A/B Testing View -->
+                <div id="view-ab-testing" class="analysis-view">
+                    <!-- Analysis Configuration Section -->
+                    <section class="glass-card analysis-section hidden" id="analysisSection">
+                        <h2 class="section-title">
+                            <span class="icon">⚙️</span>
+                            Configuración del Análisis A/B
+                        </h2>
+
+                        <form id="analysisForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="analysisDataset">Dataset</label>
+                                    <select id="analysisDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="groupColumn">Columna de Grupo</label>
+                                    <select id="groupColumn" class="select-input" required>
+                                        <option value="">Selecciona una columna...</option>
+                                    </select>
+                                    <small>Columna que identifica control vs treatment</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="targetColumn">Columna Objetivo</label>
+                                    <select id="targetColumn" class="select-input" required>
+                                        <option value="">Selecciona una columna...</option>
+                                    </select>
+                                    <small>Variable a medir (ej: signed_up)</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="controlValue">Valor Control</label>
+                                    <input type="text" id="controlValue" class="text-input"
+                                        placeholder="ej: No, Control, 0" required>
+                                    <small>Valor que identifica el grupo control</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="treatmentValue">Valor Treatment</label>
+                                    <input type="text" id="treatmentValue" class="text-input"
+                                        placeholder="ej: Yes, Treatment, 1" required>
+                                    <small>Valor que identifica el grupo treatment</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="alphaValue">Nivel de Significancia (α)</label>
+                                    <input type="number" id="alphaValue" class="text-input" value="0.05" step="0.01"
+                                        min="0.01" max="0.1" required>
+                                    <small>Típicamente 0.05 (95% de confianza)</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🚀</span> Ejecutar Análisis
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Results Section -->
+                    <section class="glass-card results-section hidden" id="resultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📈</span>
+                                Resultad. A/B Testing
+                            </span>
+                            <button id="exportABExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="resultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="groupColumn">Columna de Grupo</label>
-                        <select id="groupColumn" class="select-input" required>
-                            <option value="">Selecciona una columna...</option>
-                        </select>
-                        <small>Columna que identifica control vs treatment</small>
-                    </div>
+                <!-- SCM View -->
+                <div id="view-scm" class="analysis-view hidden">
+                    <!-- Synthetic Control Configuration Section -->
+                    <section class="glass-card scm-section" id="scmSection">
+                        <h2 class="section-title">
+                            <span class="icon">🧪</span>
+                            Contr. Sintético
+                        </h2>
 
-                    <div class="form-group">
-                        <label for="targetColumn">Columna Objetivo</label>
-                        <select id="targetColumn" class="select-input" required>
-                            <option value="">Selecciona una columna...</option>
-                        </select>
-                        <small>Variable a medir (ej: signed_up)</small>
-                    </div>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Estima el efecto causal construyendo un "contrafactual".
+                        </p>
+
+                        <form id="scmForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="scmDataset">Dataset</label>
+                                    <select id="scmDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="timeColumn">Columna de Tiempo</label>
+                                    <select id="timeColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Variable temporal</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="unitColumn">Columna de Unidades</label>
+                                    <select id="unitColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Identifica cada entidad</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="scmTargetColumn">Variable de Resultado</label>
+                                    <select id="scmTargetColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="treatedUnit">Unidad Tratada</label>
+                                    <select id="treatedUnit" class="select-input" required>
+                                        <option value="">Selecciona unidad...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="treatmentTime">Momento del Tratamiento</label>
+                                    <input type="number" id="treatmentTime" class="text-input" step="any" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🔬</span> Ejecutar SCM
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- SCM Results Section -->
+                    <section class="glass-card scm-results-section hidden" id="scmResultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados SCM
+                            </span>
+                            <button id="exportSCMExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="scmResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="controlValue">Valor Control</label>
-                        <input type="text" id="controlValue" class="text-input" placeholder="ej: No, Control, 0"
-                            required>
-                        <small>Valor que identifica el grupo control</small>
-                    </div>
+                <!-- Regression View -->
+                <div id="view-regression" class="analysis-view hidden">
+                    <!-- Regression / Curve Fitting Section -->
+                    <section class="glass-card regression-section" id="regressionSection">
+                        <h2 class="section-title">
+                            <span class="icon">📈</span>
+                            Regresión
+                        </h2>
 
-                    <div class="form-group">
-                        <label for="treatmentValue">Valor Treatment</label>
-                        <input type="text" id="treatmentValue" class="text-input" placeholder="ej: Yes, Treatment, 1"
-                            required>
-                        <small>Valor que identifica el grupo treatment</small>
-                    </div>
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Ajusta funciones matemáticas con motores avanzados.
+                        </p>
+
+                        <form id="regressionForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="regressionDataset">Dataset</label>
+                                    <select id="regressionDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="xColumn">Columna X</label>
+                                    <select id="xColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="yColumn">Columna Y</label>
+                                    <select id="yColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="functionSelect">Función Matemática</label>
+                                    <select id="functionSelect" class="select-input" required>
+                                        <option value="">Cargando funciones...</option>
+                                    </select>
+                                    <small id="functionFormula">Selecciona una función</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="engineSelect">Motor de Optimización</label>
+                                    <select id="engineSelect" class="select-input" required>
+                                        <option value="sequential">Sequential (Híbrido)</option>
+                                        <option value="lm">Levenberg-Marquardt</option>
+                                        <option value="de">Differential Evolution</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>📐</span> Ejecutar Regresión
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Regression Results Section -->
+                    <section class="glass-card regression-results-section hidden" id="regressionResultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Regresión
+                            </span>
+                            <button id="exportRegressionExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="regressionResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="alphaValue">Nivel de Significancia (α)</label>
-                        <input type="number" id="alphaValue" class="text-input" value="0.05" step="0.01" min="0.01"
-                            max="0.1" required>
-                        <small>Típicamente 0.05 (95% de confianza)</small>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-large">
-                    <span>🚀</span> Ejecutar Análisis
-                </button>
-            </form>
-        </section>
-
-        <!-- Results Section -->
-        <section class="glass-card results-section hidden" id="resultsSection">
-            <h2 class="section-title">
-                <span>
-                    <span class="icon">📈</span>
-                    Resultados del Análisis
-                </span>
-                <button id="exportABExcel" class="btn btn-secondary btn-small">
-                    <span>📥</span> Exportar Excel
-                </button>
-            </h2>
-
-            <div id="resultsContent">
-                <!-- Los resultados se insertarán dinámicamente aquí -->
             </div>
-        </section>
-
-        <!-- Synthetic Control Configuration Section -->
-        <section class="glass-card scm-section hidden" id="scmSection">
-            <h2 class="section-title">
-                <span class="icon">🧪</span>
-                Análisis de Control Sintético
-            </h2>
-
-            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
-                El Método de Control Sintético estima el efecto causal de una intervención
-                construyendo un "contrafactual" a partir de unidades de control ponderadas.
-            </p>
-
-            <form id="scmForm" class="analysis-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="scmDataset">Dataset</label>
-                        <select id="scmDataset" class="select-input" required>
-                            <option value="">Selecciona un dataset...</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="timeColumn">Columna de Tiempo</label>
-                        <select id="timeColumn" class="select-input" required>
-                            <option value="">Selecciona columna...</option>
-                        </select>
-                        <small>Variable temporal (año, mes, periodo)</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="unitColumn">Columna de Unidades</label>
-                        <select id="unitColumn" class="select-input" required>
-                            <option value="">Selecciona columna...</option>
-                        </select>
-                        <small>Identifica cada entidad (estado, tienda, país)</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="scmTargetColumn">Variable de Resultado</label>
-                        <select id="scmTargetColumn" class="select-input" required>
-                            <option value="">Selecciona columna...</option>
-                        </select>
-                        <small>La métrica que deseas analizar</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="treatedUnit">Unidad Tratada</label>
-                        <select id="treatedUnit" class="select-input" required>
-                            <option value="">Selecciona unidad...</option>
-                        </select>
-                        <small>La unidad que recibió la intervención</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="treatmentTime">Momento del Tratamiento</label>
-                        <input type="number" id="treatmentTime" class="text-input" step="any" required>
-                        <small>Valor de tiempo cuando inició la intervención</small>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-large">
-                    <span>🔬</span> Ejecutar Análisis de Control Sintético
-                </button>
-            </form>
-        </section>
-
-        <!-- SCM Results Section -->
-        <section class="glass-card scm-results-section hidden" id="scmResultsSection">
-            <h2 class="section-title">
-                <span>
-                    <span class="icon">📊</span>
-                    Resultados del Control Sintético
-                </span>
-                <button id="exportSCMExcel" class="btn btn-secondary btn-small">
-                    <span>📥</span> Exportar Excel
-                </button>
-            </h2>
-
-            <div id="scmResultsContent">
-                <!-- Los resultados se insertarán dinámicamente aquí -->
-            </div>
-        </section>
-
-        <!-- Regression / Curve Fitting Section -->
-        <section class="glass-card regression-section" id="regressionSection">
-            <h2 class="section-title">
-                <span class="icon">📈</span>
-                Regresión / Curve Fitting
-            </h2>
-
-            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
-                Ajusta funciones matemáticas a tus datos utilizando motores de optimización avanzados.
-            </p>
-
-            <form id="regressionForm" class="analysis-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="regressionDataset">Dataset</label>
-                        <select id="regressionDataset" class="select-input" required>
-                            <option value="">Selecciona un dataset...</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="xColumn">Columna X (Variable Independiente)</label>
-                        <select id="xColumn" class="select-input" required>
-                            <option value="">Selecciona columna...</option>
-                        </select>
-                        <small>Datos en el eje horizontal</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="yColumn">Columna Y (Variable Dependiente)</label>
-                        <select id="yColumn" class="select-input" required>
-                            <option value="">Selecciona columna...</option>
-                        </select>
-                        <small>Datos a ajustar en el eje vertical</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="functionSelect">Función Matemática</label>
-                        <select id="functionSelect" class="select-input" required>
-                            <option value="">Cargando funciones...</option>
-                        </select>
-                        <small id="functionFormula">Selecciona una función para ver su fórmula</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="engineSelect">Motor de Optimización</label>
-                        <select id="engineSelect" class="select-input" required>
-                            <option value="sequential">Sequential (Híbrido - Recomendado)</option>
-                            <option value="lm">Levenberg-Marquardt (Rápido)</option>
-                            <option value="de">Differential Evolution (Robusto)</option>
-                        </select>
-                        <small>Sequential combina DE + LM para mejor precisión</small>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-large">
-                    <span>📐</span> Ejecutar Regresión
-                </button>
-            </form>
-        </section>
-
-        <!-- Regression Results Section -->
-        <section class="glass-card regression-results-section hidden" id="regressionResultsSection">
-            <h2 class="section-title">
-                <span>
-                    <span class="icon">📊</span>
-                    Resultados de la Regresión
-                </span>
-                <button id="exportRegressionExcel" class="btn btn-secondary btn-small">
-                    <span>📥</span> Exportar Excel
-                </button>
-            </h2>
-
-            <div id="regressionResultsContent">
-                <!-- Los resultados se insertarán dinámicamente aquí -->
-            </div>
-        </section>
+        </main>
     </div>
 
     <!-- Toast Notifications -->
