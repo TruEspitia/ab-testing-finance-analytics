@@ -60,6 +60,12 @@
                                 <span>Clustering</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="quick-stats" id="nav-quick-stats">
+                                <span class="material-icons">speed</span>
+                                <span>Quick Stats</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -600,6 +606,82 @@
                             <!-- Los resultados se insertarán dinámicamente aquí -->
                         </div>
                     </section>
+
+                    <!-- Quick Stats Section -->
+                    <section class="glass-card quick-stats-section hidden" id="quickStatsSection">
+                        <h2 class="section-title">
+                            <span class="icon">⚡</span>
+                            Quick Stats - Análisis Rápido
+                        </h2>
+
+                        <!-- Dataset Selector -->
+                        <div class="form-group">
+                            <label for="quickStatsDataset">Dataset</label>
+                            <select id="quickStatsDataset" class="form-control">
+                                <option value="">Selecciona un dataset...</option>
+                            </select>
+                        </div>
+
+                        <!-- Analysis Type Tabs -->
+                        <div class="stats-tabs" style="margin: var(--spacing-lg) 0;">
+                            <button class="stats-tab active" data-tab="single">
+                                <span class="material-icons">bar_chart</span>
+                                Una Variable
+                            </button>
+                            <button class="stats-tab" data-tab="dual">
+                                <span class="material-icons">scatter_plot</span>
+                                Dos Variables
+                            </button>
+                        </div>
+
+                        <!-- Single Variable Analysis -->
+                        <div id="singleVarPanel" class="stats-panel">
+                            <div class="form-group">
+                                <label for="singleVariable">Variable a Analizar</label>
+                                <select id="singleVariable" class="form-control">
+                                    <option value="">Selecciona una variable...</option>
+                                </select>
+                            </div>
+                            <button id="analyzeSingleBtn" class="btn btn-primary">
+                                <span class="material-icons">analytics</span>
+                                Analizar
+                            </button>
+                        </div>
+
+                        <!-- Dual Variable Analysis -->
+                        <div id="dualVarPanel" class="stats-panel hidden">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="variableX">Variable X</label>
+                                    <select id="variableX" class="form-control">
+                                        <option value="">Selecciona variable X...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="variableY">Variable Y</label>
+                                    <select id="variableY" class="form-control">
+                                        <option value="">Selecciona variable Y...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button id="analyzeDualBtn" class="btn btn-primary">
+                                <span class="material-icons">analytics</span>
+                                Analizar Relación
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Quick Stats Results Section -->
+                    <section class="glass-card quick-stats-results-section hidden" id="quickStatsResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span class="icon">📊</span>
+                            Resultados
+                        </h2>
+                        <div id="quickStatsResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
                 </div>
             </div>
         </main>
@@ -614,6 +696,7 @@
         <p>Procesando...</p>
     </div>
 
+    <script src="quick_stats.js"></script>
     <script src="app.js"></script>
 </body>
 
