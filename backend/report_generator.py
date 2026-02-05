@@ -240,3 +240,86 @@ class ReportGenerator:
         workbook.close()
         output.seek(0)
         return output
+
+    @staticmethod
+    def generate_clustering_report(data: Dict[str, Any], chart_images: List[str]) -> io.BytesIO:
+        """
+        Genera un Excel con los resultados de Clustering.
+        """
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Clustering')
+        
+        # Estilos
+        title_fmt = workbook.add_format({'bold': True, 'size': 16, 'font_color': '#f59e0b'})
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#fef3c7', 'border': 1})
+        label_fmt = workbook.add_format({'font_color': '#64748b'})
+        metric_fmt = workbook.add_format({'num_format': '0.0000', 'bold': True})
+        percent_fmt = workbook.add_format({'num_format': '0.00%'})
+        
+        # Título
+        sheet.write('A1', 'Informe de Clustering', title_fmt)
+        sheet.write('A2', f'Fecha de generación: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', label_fmt)
+        
+        # Información básica
+        sheet.write('A4', 'Configuración del Análisis', header_fmt)
+        sheet.write('A5', 'Dataset ID:', label_fmt)
+        sheet.write('B5', data.get('dataset_id', 'N/A'))
+        sheet.write('A6', 'Algoritmo:', label_fmt)
+        sheet.write('B6', data.get('algorithm', 'N/A').upper())
+        sheet.write('A7', 'Número de Clusters:', label_fmt)
+        sheet.write('B7', data.get('n_clusters', 0))
+        
+        if data.get('algorithm') == 'dbscan':
+            sheet.write('A8', 'Puntos de Ruido:', label_fmt)
+            sheet.write('B8', data.get('n_noise', 0))
+            sheet.write('A9', 'Epsilon:', label_fmt)
+            sheet.write('B9', data.get('eps', 0))
+            sheet.write('A10', 'Min Samples:', label_fmt)
+            sheet.write('B10', data.get('min_samples', 0))
+            metric_row = 12
+        else:
+            sheet.write('A8', 'Inercia:', label_fmt)
+            sheet.write('B8', data.get('inertia', 0), metric_fmt)
+            metric_row = 10
+        
+        # Métricas de calidad
+        sheet.write(f'A{metric_row}', 'Métricas de Calidad', header_fmt)
+        sheet.write(f'A{metric_row+1}', 'Silhouette Score:', label_fmt)
+        sheet.write(f'B{metric_row+1}', data.get('silhouette_score', 0), metric_fmt)
+        sheet.write(f'A{metric_row+2}', 'Davies-Bouldin Score:', label_fmt)
+        sheet.write(f'B{metric_row+2}', data.get('davies_bouldin_score', 0), metric_fmt)
+        
+        # Estadísticas por cluster
+        stats_row = metric_row + 4
+        sheet.write(f'A{stats_row}', 'Estadísticas por Cluster', header_fmt)
+        sheet.write(f'B{stats_row}', 'Tamaño', header_fmt)
+        sheet.write(f'C{stats_row}', 'Porcentaje', header_fmt)
+        
+        cluster_stats = data.get('cluster_stats', [])
+        row = stats_row + 1
+        for stat in cluster_stats:
+            cluster_id = stat.get('cluster_id', 0)
+            cluster_name = f"Ruido (ID={cluster_id})" if stat.get('is_noise') else f"Cluster {cluster_id}"
+            sheet.write(f'A{row}', cluster_name, label_fmt)
+            sheet.write(f'B{row}', stat.get('size', 0))
+            sheet.write(f'C{row}', stat.get('percentage', 0) / 100, percent_fmt)
+            row += 1
+        
+        # Imágenes de los gráficos
+        img_row = 4
+        for i, img_data in enumerate(chart_images):
+            if img_data:
+                if ',' in img_data:
+                    header, encoded = img_data.split(',', 1)
+                else:
+                    encoded = img_data
+                
+                image_bytes = io.BytesIO(base64.b64decode(encoded))
+                sheet.insert_image(f'E{img_row}', f'clustering_chart_{i}.png', 
+                                   {'image_data': image_bytes, 'x_scale': 0.6, 'y_scale': 0.6})
+                img_row += 20
+        
+        workbook.close()
+        output.seek(0)
+        return output

@@ -3,6 +3,7 @@ numpy
 matplotlib
 seaborn
 scipy
+scikit-learn
 streamlit
 notebook
 ipykernel
@@ -12,3 +13,4 @@ python-multipart
 openpyxl
 chardet
 xlsxwriter
+pydantic

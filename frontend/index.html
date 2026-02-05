@@ -54,6 +54,12 @@
                                 <span>Regresiones</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="clustering" id="nav-clustering">
+                                <span class="material-icons">bubble_chart</span>
+                                <span>Clustering</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -478,6 +484,119 @@
                         </h2>
 
                         <div id="regressionResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Clustering View -->
+                <div id="view-clustering" class="analysis-view hidden">
+                    <!-- Clustering Configuration Section -->
+                    <section class="glass-card clustering-section" id="clusteringSection">
+                        <h2 class="section-title">
+                            <span class="icon">🔮</span>
+                            Análisis de Clustering
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Agrupa datos usando K-means o DBSCAN con métricas de calidad.
+                        </p>
+
+                        <form id="clusteringForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="clusteringDataset">Dataset</label>
+                                    <select id="clusteringDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="featureColumns">Columnas para Clustering</label>
+                                    <select id="featureColumns" class="select-input" multiple required>
+                                        <option value="">Selecciona columnas...</option>
+                                    </select>
+                                    <small>Mantén Ctrl para seleccionar múltiples columnas numéricas</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="algorithmSelect">Algoritmo</label>
+                                    <select id="algorithmSelect" class="select-input" required>
+                                        <option value="kmeans">K-Means</option>
+                                        <option value="dbscan">DBSCAN</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- K-means options -->
+                            <div id="kmeansOptions">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="nClusters">Número de Clusters (K)</label>
+                                        <input type="number" id="nClusters" class="text-input" value="3" min="2"
+                                            max="20">
+                                        <small>Usa el gráfico del codo para elegir K óptimo</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" id="elbowPlotBtn" class="btn btn-secondary">
+                                            <span>📊</span> Gráfico del Codo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DBSCAN options -->
+                            <div id="dbscanOptions" class="hidden">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="eps">Epsilon (Radio)</label>
+                                        <input type="number" id="eps" class="text-input" value="0.5" step="0.1"
+                                            min="0.1">
+                                        <small>Radio máximo para considerar vecinos</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="minSamples">Min Samples</label>
+                                        <input type="number" id="minSamples" class="text-input" value="5" min="2">
+                                        <small>Mínimo de puntos para formar un cluster</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🔮</span> Ejecutar Clustering
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Elbow Plot Section -->
+                    <section class="glass-card elbow-section hidden" id="elbowSection">
+                        <h2 class="section-title">
+                            <span class="icon">📈</span>
+                            Método del Codo
+                        </h2>
+                        <div id="elbowPlotContainer" style="text-align: center;">
+                            <!-- El gráfico se insertará aquí -->
+                        </div>
+                    </section>
+
+                    <!-- Clustering Results Section -->
+                    <section class="glass-card clustering-results-section hidden" id="clusteringResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Clustering
+                            </span>
+                            <button id="exportClusteringExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="clusteringResultsContent">
                             <!-- Los resultados se insertarán dinámicamente aquí -->
                         </div>
                     </section>

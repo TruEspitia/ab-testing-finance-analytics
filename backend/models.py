@@ -211,3 +211,75 @@ class RegressionResult(BaseModel):
     
     # Error si lo hay
     error: Optional[str] = None
+
+
+# =============================================
+# Modelos para Clustering
+# =============================================
+
+class ClusteringConfig(BaseModel):
+    """Configuración para análisis de clustering"""
+    dataset_id: str
+    feature_columns: List[str] = Field(..., description="Columnas a usar como features")
+    algorithm: str = Field(..., description="'kmeans' o 'dbscan'")
+    
+    # Parámetros para K-means
+    n_clusters: Optional[int] = Field(None, description="Número de clusters (solo para kmeans)")
+    
+    # Parámetros para DBSCAN
+    eps: Optional[float] = Field(0.5, description="Radio de vecindad (solo para dbscan)")
+    min_samples: Optional[int] = Field(5, description="Mínimo de muestras (solo para dbscan)")
+    
+    random_state: int = Field(42, description="Semilla para reproducibilidad")
+
+
+class ClusterStats(BaseModel):
+    """Estadísticas de un cluster individual"""
+    cluster_id: int
+    size: int
+    percentage: float
+    centroid: Optional[List[float]] = None
+    is_noise: Optional[bool] = False
+
+
+class ClusteringResult(BaseModel):
+    """Resultados del análisis de clustering"""
+    success: bool
+    dataset_id: str
+    algorithm: str
+    
+    # Número de clusters encontrados
+    n_clusters: int
+    n_noise: Optional[int] = None  # Solo para DBSCAN
+    
+    # Etiquetas de cluster para cada punto
+    labels: List[int]
+    
+    # Métricas de calidad
+    silhouette_score: float
+    davies_bouldin_score: float
+    inertia: Optional[float] = None  # Solo para K-means
+    
+    # Estadísticas por cluster
+    cluster_stats: List[ClusterStats]
+    
+    # Coordenadas PCA para visualización
+    pca_coordinates: List[List[float]]
+    
+    # Gráfico en base64
+    plot_base64: str
+    
+    # Parámetros usados
+    eps: Optional[float] = None
+    min_samples: Optional[int] = None
+    
+    # Error si lo hay
+    error: Optional[str] = None
+
+
+class ElbowPlotRequest(BaseModel):
+    """Request para generar el gráfico del codo"""
+    dataset_id: str
+    feature_columns: List[str]
+    max_k: int = Field(10, description="Máximo número de clusters a probar")
+

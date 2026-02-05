@@ -6,14 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
-from .routes import router
+from .api.routers import datasets, analysis, reports, clustering
 
 
 # Crear aplicación FastAPI
 app = FastAPI(
     title="A/B Testing Finance Analytics API",
-    description="API para análisis A/B Testing en finanzas con soporte para múltiples formatos de datos",
-    version="1.0.0"
+    description="API para análisis A/B Testing, Clustering y más en finanzas con soporte para múltiples formatos de datos",
+    version="2.0.0"
 )
 
 # Configurar CORS para desarrollo
@@ -25,8 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Incluir rutas de la API
-app.include_router(router)
+# Incluir routers modulares
+app.include_router(datasets.router)
+app.include_router(analysis.router)
+app.include_router(reports.router)
+app.include_router(clustering.router)
 
 # Montar archivos estáticos del frontend
 frontend_path = Path(__file__).parent.parent / "frontend"
@@ -40,10 +43,11 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "A/B Testing Finance Analytics",
-        "version": "1.0.0"
+        "version": "2.0.0"
     }
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

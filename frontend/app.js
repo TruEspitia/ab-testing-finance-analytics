@@ -11,6 +11,7 @@ const appState = {
     lastResults: null,
     lastSCMResults: null,
     lastRegressionResults: null,
+    lastClusteringResults: null,
     availableFunctions: [],
     currentView: 'ab-testing', // Por defecto
     theme: localStorage.getItem('theme') || 'dark'
@@ -175,7 +176,8 @@ function switchView(viewId) {
     const titleMap = {
         'ab-testing': 'Análisis A/B',
         'scm': 'Pruebas de Control (SCM)',
-        'regression': 'Regresión / Curve Fitting'
+        'regression': 'Regresión / Curve Fitting',
+        'clustering': 'Análisis de Clustering'
     };
     document.getElementById('currentViewTitle').textContent = titleMap[viewId] || 'Análisis';
 
@@ -381,6 +383,34 @@ async function fetchAvailableFunctions() {
  */
 async function runRegression(config) {
     const response = await fetch(`${API_BASE_URL}/regression`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    });
+    return await response.json();
+}
+
+/**
+ * Ejecuta análisis de clustering
+ */
+async function runClustering(config) {
+    const response = await fetch(`${API_BASE_URL}/clustering`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    });
+    return await response.json();
+}
+
+/**
+ * Genera el gráfico del codo
+ */
+async function fetchElbowPlot(config) {
+    const response = await fetch(`${API_BASE_URL}/clustering/elbow-plot`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -619,6 +649,7 @@ async function loadDatasets() {
         await updateStats();
         updateSCMSection();
         updateRegressionSection();
+        updateClusteringSection();
 
     } catch (error) {
         showToast('Error al cargar datasets', 'error');
@@ -1793,13 +1824,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSCMForm();
     initThemeToggle();
     await initRegressionForm();
+    initClusteringForm();
 
     // Cargar datasets existentes
     await loadDatasets();
 
-    // Actualizar sección de SCM y Regresión
+    // Actualizar sección de SCM, Regresión y Clustering
     updateSCMSection();
     updateRegressionSection();
+    updateClusteringSection();
 
     // Event listeners para exportación
     document.getElementById('exportABExcel')?.addEventListener('click', () => handleExportExcel('ab_test'));
@@ -1854,6 +1887,8 @@ async function handleExportExcel(type) {
         data = appState.lastSCMResults;
     } else if (type === 'regression') {
         data = appState.lastRegressionResults;
+    } else if (type === 'clustering') {
+        data = appState.lastClusteringResults;
     }
 
     if (!data) {
@@ -1875,6 +1910,9 @@ async function handleExportExcel(type) {
         } else if (type === 'regression') {
             const img = await Plotly.toImage('regressionPlotlyChart', { format: 'png', width: 800, height: 500 });
             charts.push(img);
+        } else if (type === 'clustering' && data.plot_base64) {
+            // For clustering, we already have the base64 image from the backend
+            charts.push(data.plot_base64);
         }
 
         await exportResultsToExcel(type, data, charts);
@@ -2261,3 +2299,321 @@ function updateRegressionSection() {
     }
 }
 
+
+// =============================================
+// Clustering
+// =============================================
+
+/**
+ * Inicializa el formulario de clustering
+ */
+function initClusteringForm() {
+    const form = document.getElementById('clusteringForm');
+    const datasetSelect = document.getElementById('clusteringDataset');
+    const algorithmSelect = document.getElementById('algorithmSelect');
+    const elbowBtn = document.getElementById('elbowPlotBtn');
+    const exportBtn = document.getElementById('exportClusteringExcel');
+
+    if (!form) return;
+
+    // Cambio de dataset
+    datasetSelect?.addEventListener('change', async (e) => {
+        const datasetId = e.target.value;
+        if (datasetId) {
+            try {
+                const columnsData = await fetchDatasetColumns(datasetId);
+                populateClusteringColumnSelects(columnsData.columns);
+            } catch (error) {
+                showToast('Error al cargar columnas', 'error');
+            }
+        }
+    });
+
+    // Cambio de algoritmo
+    algorithmSelect?.addEventListener('change', (e) => {
+        const kmeansOptions = document.getElementById('kmeansOptions');
+        const dbscanOptions = document.getElementById('dbscanOptions');
+
+        if (e.target.value === 'kmeans') {
+            kmeansOptions.classList.remove('hidden');
+            dbscanOptions.classList.add('hidden');
+        } else {
+            kmeansOptions.classList.add('hidden');
+            dbscanOptions.classList.remove('hidden');
+        }
+    });
+
+    // Botón de gráfico del codo
+    elbowBtn?.addEventListener('click', async () => {
+        await handleElbowPlot();
+    });
+
+    // Submit del formulario
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleClusteringSubmit();
+    });
+
+    // Exportar Excel
+    exportBtn?.addEventListener('click', () => {
+        handleExportExcel('clustering');
+    });
+}
+
+/**
+ * Puebla los selects de columnas para clustering
+ */
+function populateClusteringColumnSelects(columns) {
+    const featureSelect = document.getElementById('featureColumns');
+    if (!featureSelect) return;
+
+    featureSelect.innerHTML = '';
+
+    // Filtrar solo columnas numéricas
+    const numericColumns = columns.filter(col =>
+        col.dtype.includes('int') || col.dtype.includes('float')
+    );
+
+    numericColumns.forEach(col => {
+        const option = document.createElement('option');
+        option.value = col.name;
+        option.textContent = `${col.name} (${col.dtype})`;
+        featureSelect.appendChild(option);
+    });
+
+    if (numericColumns.length === 0) {
+        featureSelect.innerHTML = '<option value="">No hay columnas numéricas</option>';
+    }
+}
+
+/**
+ * Maneja el gráfico del codo
+ */
+async function handleElbowPlot() {
+    const datasetId = document.getElementById('clusteringDataset').value;
+    const featureSelect = document.getElementById('featureColumns');
+    const selectedFeatures = Array.from(featureSelect.selectedOptions).map(opt => opt.value);
+
+    if (!datasetId) {
+        showToast('Selecciona un dataset primero', 'error');
+        return;
+    }
+
+    if (selectedFeatures.length < 1) {
+        showToast('Selecciona al menos una columna', 'error');
+        return;
+    }
+
+    try {
+        setLoading(true);
+
+        const config = {
+            dataset_id: datasetId,
+            feature_columns: selectedFeatures,
+            max_k: 10
+        };
+
+        const result = await fetchElbowPlot(config);
+
+        if (result.success) {
+            const elbowSection = document.getElementById('elbowSection');
+            const container = document.getElementById('elbowPlotContainer');
+
+            elbowSection.classList.remove('hidden');
+            container.innerHTML = `<img src="data:image/png;base64,${result.plot_base64}" alt="Elbow Plot" style="max-width: 100%; border-radius: 8px;">`;
+
+            showToast('Gráfico del codo generado', 'success');
+        } else {
+            showToast(result.detail || 'Error al generar gráfico', 'error');
+        }
+    } catch (error) {
+        showToast('Error de conexión', 'error');
+        console.error('Elbow plot error:', error);
+    } finally {
+        setLoading(false);
+    }
+}
+
+/**
+ * Maneja el submit del formulario de clustering
+ */
+async function handleClusteringSubmit() {
+    const datasetId = document.getElementById('clusteringDataset').value;
+    const featureSelect = document.getElementById('featureColumns');
+    const selectedFeatures = Array.from(featureSelect.selectedOptions).map(opt => opt.value);
+    const algorithm = document.getElementById('algorithmSelect').value;
+
+    if (!datasetId) {
+        showToast('Selecciona un dataset', 'error');
+        return;
+    }
+
+    if (selectedFeatures.length < 1) {
+        showToast('Selecciona al menos una columna', 'error');
+        return;
+    }
+
+    try {
+        setLoading(true);
+
+        const config = {
+            dataset_id: datasetId,
+            feature_columns: selectedFeatures,
+            algorithm: algorithm
+        };
+
+        if (algorithm === 'kmeans') {
+            config.n_clusters = parseInt(document.getElementById('nClusters').value) || 3;
+        } else {
+            config.eps = parseFloat(document.getElementById('eps').value) || 0.5;
+            config.min_samples = parseInt(document.getElementById('minSamples').value) || 5;
+        }
+
+        const result = await runClustering(config);
+
+        if (result.success) {
+            appState.lastClusteringResults = result;
+            renderClusteringResults(result);
+            showToast('Clustering completado', 'success');
+        } else {
+            showToast(result.error || 'Error en clustering', 'error');
+        }
+    } catch (error) {
+        showToast('Error de conexión', 'error');
+        console.error('Clustering error:', error);
+    } finally {
+        setLoading(false);
+    }
+}
+
+/**
+ * Renderiza los resultados del clustering
+ */
+function renderClusteringResults(result) {
+    const resultsSection = document.getElementById('clusteringResultsSection');
+    const resultsContent = document.getElementById('clusteringResultsContent');
+
+    resultsSection.classList.remove('hidden');
+
+    const algorithmLabel = result.algorithm === 'kmeans' ? 'K-Means' : 'DBSCAN';
+    const silhouetteClass = result.silhouette_score >= 0.5 ? 'good' : result.silhouette_score >= 0.25 ? 'moderate' : 'poor';
+
+    let metricsHtml = `
+        <div class="results-grid">
+            <div class="result-card">
+                <div class="result-label">Algoritmo</div>
+                <div class="result-value">${algorithmLabel}</div>
+            </div>
+            <div class="result-card">
+                <div class="result-label">Clusters</div>
+                <div class="result-value">${result.n_clusters}</div>
+            </div>
+            <div class="result-card">
+                <div class="result-label">Silhouette Score</div>
+                <div class="result-value ${silhouetteClass}">${result.silhouette_score.toFixed(4)}</div>
+            </div>
+            <div class="result-card">
+                <div class="result-label">Davies-Bouldin</div>
+                <div class="result-value">${result.davies_bouldin_score.toFixed(4)}</div>
+            </div>
+    `;
+
+    if (result.algorithm === 'kmeans' && result.inertia !== undefined) {
+        metricsHtml += `
+            <div class="result-card">
+                <div class="result-label">Inercia</div>
+                <div class="result-value">${result.inertia.toFixed(2)}</div>
+            </div>
+        `;
+    }
+
+    if (result.algorithm === 'dbscan' && result.n_noise !== undefined) {
+        metricsHtml += `
+            <div class="result-card">
+                <div class="result-label">Puntos de Ruido</div>
+                <div class="result-value">${result.n_noise}</div>
+            </div>
+        `;
+    }
+
+    metricsHtml += '</div>';
+
+    // Tabla de estadísticas por cluster
+    let statsHtml = `
+        <h3 style="margin-top: var(--spacing-lg);">📊 Estadísticas por Cluster</h3>
+        <table class="data-table" style="margin-top: var(--spacing-sm);">
+            <thead>
+                <tr>
+                    <th>Cluster</th>
+                    <th>Tamaño</th>
+                    <th>Porcentaje</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    result.cluster_stats.forEach(stat => {
+        const clusterName = stat.is_noise ? `Ruido (${stat.cluster_id})` : `Cluster ${stat.cluster_id}`;
+        statsHtml += `
+            <tr>
+                <td>${clusterName}</td>
+                <td>${stat.size.toLocaleString()}</td>
+                <td>${stat.percentage.toFixed(2)}%</td>
+            </tr>
+        `;
+    });
+
+    statsHtml += '</tbody></table>';
+
+    // Gráfico
+    let plotHtml = '';
+    if (result.plot_base64) {
+        plotHtml = `
+            <h3 style="margin-top: var(--spacing-lg);">🎨 Visualización PCA</h3>
+            <div style="text-align: center; margin-top: var(--spacing-sm);">
+                <img src="data:image/png;base64,${result.plot_base64}" alt="Cluster Plot" style="max-width: 100%; border-radius: 8px;">
+            </div>
+        `;
+    }
+
+    // Interpretación
+    let interpretationHtml = `
+        <div class="interpretation-box" style="margin-top: var(--spacing-lg);">
+            <h3>📝 Interpretación</h3>
+            <p>
+    `;
+
+    if (result.silhouette_score >= 0.7) {
+        interpretationHtml += 'Los clusters están <strong>muy bien definidos</strong>. Los datos presentan una estructura de agrupamiento clara.';
+    } else if (result.silhouette_score >= 0.5) {
+        interpretationHtml += 'Los clusters están <strong>razonablemente bien definidos</strong>. Existe una separación adecuada entre grupos.';
+    } else if (result.silhouette_score >= 0.25) {
+        interpretationHtml += 'La estructura de clusters es <strong>débil</strong>. Considere ajustar parámetros o probar otro algoritmo.';
+    } else {
+        interpretationHtml += 'La estructura de clusters es <strong>muy débil o inexistente</strong>. Los datos pueden no ser adecuados para clustering.';
+    }
+
+    interpretationHtml += '</p></div>';
+
+    resultsContent.innerHTML = metricsHtml + statsHtml + plotHtml + interpretationHtml;
+}
+
+/**
+ * Actualiza la sección de clustering cuando hay datasets cargados
+ */
+function updateClusteringSection() {
+    const clusteringSection = document.getElementById('clusteringSection');
+    const clusteringDatasetSelect = document.getElementById('clusteringDataset');
+
+    if (!clusteringSection || !clusteringDatasetSelect) return;
+
+    if (appState.datasets.length > 0) {
+        clusteringSection.classList.remove('hidden');
+
+        // Actualizar selector de datasets
+        clusteringDatasetSelect.innerHTML = '<option value="">Selecciona un dataset...</option>';
+        appState.datasets.forEach(dataset => {
+            clusteringDatasetSelect.innerHTML += `<option value="${dataset.id}">${dataset.name}</option>`;
+        });
+    }
+}

@@ -28,8 +28,8 @@ def open_browser(url: str, delay: float = 1.5):
 
 if __name__ == "__main__":
     # Configuración del servidor
-    host = "127.0.0.1"
-    port = 8000
+    host = "localhost"
+    port = 8080
     url = f"http://{host}:{port}"
     
     print("=" * 60)
