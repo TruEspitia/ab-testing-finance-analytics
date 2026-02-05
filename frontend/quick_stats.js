@@ -386,7 +386,7 @@ function renderDualVariableResults(result) {
  * Update Quick Stats section when datasets are loaded
  */
 function updateQuickStatsSection() {
-    const quickStatsSection = document.getElementById('quickStatsSection');
+    const quickStatsSection = document.getElementById('view-quick-stats');
     const quickStatsDatasetSelect = document.getElementById('quickStatsDataset');
 
     if (!quickStatsSection || !quickStatsDatasetSelect) return;
@@ -402,6 +402,7 @@ function updateQuickStatsSection() {
     }
 }
 
+
 // Export functions
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -411,3 +412,8 @@ if (typeof module !== 'undefined' && module.exports) {
         analyzeDualVariables
     };
 }
+
+// Auto-initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function () {
+    initQuickStats();
+});

@@ -177,7 +177,8 @@ function switchView(viewId) {
         'ab-testing': 'Análisis A/B',
         'scm': 'Pruebas de Control (SCM)',
         'regression': 'Regresión / Curve Fitting',
-        'clustering': 'Análisis de Clustering'
+        'clustering': 'Análisis de Clustering',
+        'quick-stats': 'Quick Stats'
     };
     document.getElementById('currentViewTitle').textContent = titleMap[viewId] || 'Análisis';
 
