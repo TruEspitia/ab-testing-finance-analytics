@@ -11,9 +11,14 @@ import numpy as np
 from scipy import stats
 import plotly.graph_objects as go
 import plotly.express as px
+import logging
+import traceback
 from ...dataset_manager import dataset_manager
 
-router = APIRouter(prefix="/quick-stats", tags=["quick-stats"])
+# Configure logging
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/quick-stats", tags=["quick-stats"])
 
 
 class SingleVariableRequest(BaseModel):
@@ -70,7 +75,7 @@ async def analyze_single_variable(request: SingleVariableRequest):
         )
         fig.update_layout(
             plot_bgcolor='rgba(255, 255, 255, 0.03)',
-            paper_bgcolor='transparent',
+            paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#f8fafc')
         )
         
@@ -94,8 +99,13 @@ async def analyze_single_variable(request: SingleVariableRequest):
         var_val = float(series.var())
         
         # Moda (puede haber múltiples)
-        mode_result = stats.mode(series, keepdims=True)
-        mode_val = float(mode_result.mode[0]) if len(mode_result.mode) > 0 else mean_val
+        # scipy 1.11+ changed stats.mode() API, removed keepdims parameter
+        mode_result = stats.mode(series)
+        # In scipy 1.11+, mode_result.mode is a scalar, not an array
+        try:
+            mode_val = float(mode_result.mode[0]) if hasattr(mode_result.mode, '__getitem__') else float(mode_result.mode)
+        except (IndexError, TypeError):
+            mode_val = mean_val
         
         # Error estándar de la media
         sem_val = float(stats.sem(series))
@@ -152,7 +162,7 @@ async def analyze_single_variable(request: SingleVariableRequest):
             xaxis_title=request.variable,
             yaxis_title='Frecuencia',
             plot_bgcolor='rgba(255, 255, 255, 0.03)',
-            paper_bgcolor='transparent',
+            paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#f8fafc'),
             showlegend=True
         )
@@ -245,13 +255,17 @@ async def analyze_dual_variables(request: DualVariableRequest):
         # Calcular regresión lineal
         slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
         
+        # Convert pandas series to lists for Plotly compatibility
+        x_list = x.tolist()
+        y_list = y.tolist()
+        
         # Crear scatter plot
         fig = go.Figure()
         
         # Puntos
         fig.add_trace(go.Scatter(
-            x=x,
-            y=y,
+            x=x_list,
+            y=y_list,
             mode='markers',
             name='Datos',
             marker=dict(
@@ -262,12 +276,12 @@ async def analyze_dual_variables(request: DualVariableRequest):
         ))
         
         # Línea de tendencia
-        x_range = np.linspace(x.min(), x.max(), 100)
+        x_range = np.linspace(float(x.min()), float(x.max()), 100)
         y_trend = slope * x_range + intercept
         
         fig.add_trace(go.Scatter(
-            x=x_range,
-            y=y_trend,
+            x=x_range.tolist(),
+            y=y_trend.tolist(),
             mode='lines',
             name=f'Tendencia (R²={r_value**2:.3f})',
             line=dict(color='red', width=2, dash='dash')
@@ -278,7 +292,7 @@ async def analyze_dual_variables(request: DualVariableRequest):
             xaxis_title=request.variable_x,
             yaxis_title=request.variable_y,
             plot_bgcolor='rgba(255, 255, 255, 0.03)',
-            paper_bgcolor='transparent',
+            paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='#f8fafc'),
             showlegend=True,
             hovermode='closest'
@@ -307,7 +321,7 @@ async def analyze_dual_variables(request: DualVariableRequest):
                 "pearson_r": round(float(correlation), 4),
                 "p_value": round(float(p_value), 6),
                 "r_squared": round(float(r_value ** 2), 4),
-                "is_significant": p_value < 0.05
+                "is_significant": bool(p_value < 0.05)
             },
             "regression": {
                 "slope": round(float(slope), 4),
@@ -320,4 +334,7 @@ async def analyze_dual_variables(request: DualVariableRequest):
         }
         
     except Exception as e:
+        logger.error(f"Error in analyze_dual_variables: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error al analizar variables: {str(e)}")
+

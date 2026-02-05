@@ -700,6 +700,8 @@ async function loadDatasets() {
         updateSCMSection();
         updateRegressionSection();
         updateClusteringSection();
+        updateQuickStatsSection();
+
 
     } catch (error) {
         showToast('Error al cargar datasets', 'error');
