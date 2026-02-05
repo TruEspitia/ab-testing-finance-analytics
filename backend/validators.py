@@ -72,15 +72,18 @@ class DataValidator:
         missing_cells = df.isnull().sum().sum()
         
         quality_report = {
-            "total_rows": len(df),
-            "total_columns": len(df.columns),
-            "total_cells": total_cells,
-            "missing_cells": int(missing_cells),
-            "missing_percentage": round((missing_cells / total_cells * 100), 2) if total_cells > 0 else 0,
+            "total_rows": int(len(df)),
+            "total_columns": int(len(df.columns)),
+            "total_cells": int(total_cells),
             "duplicate_rows": int(df.duplicated().sum()),
-            "columns_with_missing": df.columns[df.isnull().any()].tolist(),
-            "memory_usage_mb": round(df.memory_usage(deep=True).sum() / 1024 / 1024, 2)
+            "null_values": {
+                "total_nulls": int(missing_cells),
+                "percentage": float(round((missing_cells / total_cells * 100), 2)) if total_cells > 0 else 0.0,
+                "columns_with_nulls": df.columns[df.isnull().any()].tolist()
+            },
+            "memory_usage_mb": float(round(df.memory_usage(deep=True).sum() / 1024 / 1024, 2))
         }
+
         
         return quality_report
     
@@ -183,10 +186,10 @@ class DataValidator:
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         
         stats = {
-            "numeric_columns": len(numeric_cols),
-            "categorical_columns": len(categorical_cols),
-            "total_columns": len(df.columns),
-            "total_rows": len(df),
+            "numeric_columns": int(len(numeric_cols)),
+            "categorical_columns": int(len(categorical_cols)),
+            "total_columns": int(len(df.columns)),
+            "total_rows": int(len(df)),
             "numeric_summary": {},
             "categorical_summary": {}
         }
@@ -195,11 +198,11 @@ class DataValidator:
         if numeric_cols:
             for col in numeric_cols:
                 stats["numeric_summary"][col] = {
-                    "mean": round(df[col].mean(), 4) if not df[col].isnull().all() else None,
-                    "median": round(df[col].median(), 4) if not df[col].isnull().all() else None,
-                    "std": round(df[col].std(), 4) if not df[col].isnull().all() else None,
-                    "min": round(df[col].min(), 4) if not df[col].isnull().all() else None,
-                    "max": round(df[col].max(), 4) if not df[col].isnull().all() else None
+                    "mean": float(round(df[col].mean(), 4)) if not df[col].isnull().all() else None,
+                    "median": float(round(df[col].median(), 4)) if not df[col].isnull().all() else None,
+                    "std": float(round(df[col].std(), 4)) if not df[col].isnull().all() else None,
+                    "min": float(round(df[col].min(), 4)) if not df[col].isnull().all() else None,
+                    "max": float(round(df[col].max(), 4)) if not df[col].isnull().all() else None
                 }
         
         # Estadísticas de columnas categóricas
@@ -207,9 +210,10 @@ class DataValidator:
             for col in categorical_cols:
                 unique_count = df[col].nunique()
                 stats["categorical_summary"][col] = {
-                    "unique_values": unique_count,
-                    "most_common": df[col].mode()[0] if len(df[col].mode()) > 0 else None,
+                    "unique_values": int(unique_count),
+                    "most_common": str(df[col].mode()[0]) if len(df[col].mode()) > 0 else None,
                     "most_common_count": int(df[col].value_counts().iloc[0]) if len(df[col]) > 0 else 0
                 }
         
         return stats
+

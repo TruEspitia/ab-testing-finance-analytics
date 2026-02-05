@@ -420,6 +420,55 @@ async function fetchElbowPlot(config) {
     return await response.json();
 }
 
+/**
+ * Carga las funciones matemáticas disponibles desde el backend
+ */
+async function loadAvailableFunctions() {
+    try {
+        const result = await fetchAvailableFunctions();
+        if (result.success) {
+            appState.availableFunctions = result.functions || [];
+            populateFunctionSelector();
+            return true;
+        }
+    } catch (error) {
+        console.error('Error loading functions:', error);
+        showToast('Error al cargar funciones matemáticas', 'error');
+    }
+    return false;
+}
+
+/**
+ * Puebla el selector de funciones matemáticas
+ */
+function populateFunctionSelector() {
+    const functionSelect = document.getElementById('functionSelect');
+    const functionFormula = document.getElementById('functionFormula');
+
+    if (!functionSelect) return;
+
+    // Limpiar y poblar con funciones
+    functionSelect.innerHTML = '<option value="">Selecciona una función...</option>';
+
+    appState.availableFunctions.forEach(func => {
+        const option = document.createElement('option');
+        option.value = func.name;
+        option.textContent = func.name.replace(/_/g, ' ');
+        option.dataset.formula = func.formula;
+        functionSelect.appendChild(option);
+    });
+
+    // Event listener para mostrar la fórmula
+    functionSelect.addEventListener('change', (e) => {
+        const selected = e.target.selectedOptions[0];
+        if (selected && selected.dataset.formula && functionFormula) {
+            functionFormula.textContent = selected.dataset.formula;
+        } else if (functionFormula) {
+            functionFormula.textContent = 'Selecciona una función';
+        }
+    });
+}
+
 
 // =============================================
 // Gestión de Archivos
@@ -2296,6 +2345,13 @@ function updateRegressionSection() {
         appState.datasets.forEach(dataset => {
             regressionDatasetSelect.innerHTML += `<option value="${dataset.id}">${dataset.name}</option>`;
         });
+
+        // Cargar funciones matemáticas si aún no están cargadas
+        if (appState.availableFunctions.length === 0) {
+            loadAvailableFunctions();
+        } else {
+            populateFunctionSelector();
+        }
     }
 }
 

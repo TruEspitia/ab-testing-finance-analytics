@@ -149,10 +149,11 @@ async def get_available_functions():
     Returns:
         Lista de funciones con nombre, parámetros, fórmula y complejidad
     """
-    from ..math_core.ffunc_parser import FFuncParser
+    from backend.math_core.ffunc_parser import FFuncParser
     
-    functions_dir = Path(__file__).parent.parent / "functions"
+    functions_dir = Path(__file__).parent.parent.parent / "functions"
     models = FFuncParser.get_available_functions(str(functions_dir))
+
     
     return {
         "success": True,
@@ -180,8 +181,9 @@ async def perform_regression(config: RegressionConfig):
     Returns:
         RegressionResult con parámetros ajustados y métricas
     """
-    from ..math_core.ffunc_parser import FFuncParser
-    from ..math_core.optimization import OptimizationEngine
+    from backend.math_core.ffunc_parser import FFuncParser
+    from backend.math_core.optimization import OptimizationEngine
+
     
     try:
         # Obtener el dataset
@@ -224,7 +226,7 @@ async def perform_regression(config: RegressionConfig):
             )
         
         # Cargar la función
-        functions_dir = Path(__file__).parent.parent / "functions"
+        functions_dir = Path(__file__).parent.parent.parent / "functions"
         func_path = functions_dir / f"{config.function_name}.ffunc"
         
         # Buscar en subdirectorios si no está en raíz
