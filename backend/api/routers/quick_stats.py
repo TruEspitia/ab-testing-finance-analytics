@@ -30,6 +30,7 @@ class DualVariableRequest(BaseModel):
     dataset_id: str
     variable_x: str
     variable_y: str
+    correlation_type: Optional[str] = "pearson" # "pearson", "spearman", "kendall"
 
 
 @router.post("/single")
@@ -249,10 +250,21 @@ async def analyze_dual_variables(request: DualVariableRequest):
         )
     
     try:
-        # Calcular correlación de Pearson
-        correlation, p_value = stats.pearsonr(x, y)
+        # Calcular correlación según el tipo solicitado
+        corr_type = request.correlation_type.lower() if request.correlation_type else "pearson"
         
-        # Calcular regresión lineal
+        if corr_type == "spearman":
+            correlation, p_value = stats.spearmanr(x, y)
+            method_name = "Spearman (ρ)"
+        elif corr_type == "kendall":
+            correlation, p_value = stats.kendalltau(x, y)
+            method_name = "Kendall (τ)"
+        else:
+            correlation, p_value = stats.pearsonr(x, y)
+            method_name = "Pearson (r)"
+            corr_type = "pearson"
+        
+        # Calcular regresión lineal (siempre Pearson para la línea de tendencia básica)
         slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
         
         # Convert pandas series to lists for Plotly compatibility
@@ -288,7 +300,7 @@ async def analyze_dual_variables(request: DualVariableRequest):
         ))
         
         fig.update_layout(
-            title=f'{request.variable_y} vs {request.variable_x}',
+            title=f'{request.variable_y} vs {request.variable_x} ({method_name})',
             xaxis_title=request.variable_x,
             yaxis_title=request.variable_y,
             plot_bgcolor='rgba(255, 255, 255, 0.03)',
@@ -310,15 +322,17 @@ async def analyze_dual_variables(request: DualVariableRequest):
         
         direction = "positiva" if correlation > 0 else "negativa"
         
-        interpretation = f"Existe una correlación {strength} {direction} entre las variables."
+        interpretation = f"Existe una correlación {strength} {direction} ({method_name}) entre las variables."
         
         return {
             "success": True,
             "variable_x": request.variable_x,
             "variable_y": request.variable_y,
+            "correlation_type": corr_type,
+            "correlation_method": method_name,
             "n_observations": int(len(data)),
             "correlation": {
-                "pearson_r": round(float(correlation), 4),
+                "coefficient": round(float(correlation), 4),
                 "p_value": round(float(p_value), 6),
                 "r_squared": round(float(r_value ** 2), 4),
                 "is_significant": bool(p_value < 0.05)

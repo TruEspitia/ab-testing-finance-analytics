@@ -673,6 +673,17 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="correlationType">Tipo de Correlación</label>
+                                    <select id="correlationType" class="select-input">
+                                        <option value="pearson">Pearson (Lineal)</option>
+                                        <option value="spearman">Spearman (No Lineal / Rangos)</option>
+                                        <option value="kendall">Kendall (Asociación / Robusta)</option>
+                                    </select>
+                                    <small>Elige el método estadístico para analizar la relación</small>
+                                </div>
+                            </div>
                             <button id="analyzeDualBtn" class="btn btn-primary btn-large"
                                 style="margin-top: var(--spacing-md);">
                                 <span class="material-icons">analytics</span>

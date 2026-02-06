@@ -14,11 +14,16 @@ async function analyzeSingleVariable(datasetId, variable) {
     return await response.json();
 }
 
-async function analyzeDualVariables(datasetId, variableX, variableY) {
+async function analyzeDualVariables(datasetId, variableX, variableY, correlationType = 'pearson') {
     const response = await fetch(`${API_BASE_URL}/quick-stats/dual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataset_id: datasetId, variable_x: variableX, variable_y: variableY })
+        body: JSON.stringify({
+            dataset_id: datasetId,
+            variable_x: variableX,
+            variable_y: variableY,
+            correlation_type: correlationType
+        })
     });
     return await response.json();
 }
@@ -106,6 +111,7 @@ function initQuickStats() {
         const datasetId = datasetSelect.value;
         const variableX = variableXSelect.value;
         const variableY = variableYSelect.value;
+        const correlationType = document.getElementById('correlationType').value;
 
         if (!datasetId || !variableX || !variableY) {
             showToast('Selecciona un dataset y ambas variables', 'error');
@@ -119,7 +125,7 @@ function initQuickStats() {
 
         try {
             setLoading(true);
-            const result = await analyzeDualVariables(datasetId, variableX, variableY);
+            const result = await analyzeDualVariables(datasetId, variableX, variableY, correlationType);
 
             if (result.success) {
                 renderDualVariableResults(result);
@@ -309,16 +315,17 @@ function renderDualVariableResults(result) {
     const container = document.getElementById('quickStatsResultsContent');
 
     const corr = result.correlation;
+    const methodLabel = result.correlation_method || 'Correlación de Pearson (r)';
     let strengthClass = 'weak';
-    if (Math.abs(corr.pearson_r) >= 0.7) strengthClass = 'strong';
-    else if (Math.abs(corr.pearson_r) >= 0.4) strengthClass = 'moderate';
+    if (Math.abs(corr.coefficient) >= 0.7) strengthClass = 'strong';
+    else if (Math.abs(corr.coefficient) >= 0.4) strengthClass = 'moderate';
 
     container.innerHTML = `
         <div class="stats-section">
             <h3 class="stats-section-title">
                 🔗 Relación: ${result.variable_y} vs ${result.variable_x}
                 <span class="correlation-badge ${strengthClass}">
-                    r = ${corr.pearson_r}
+                    ${methodLabel.split(' ')[0]} = ${corr.coefficient}
                 </span>
             </h3>
 
@@ -328,8 +335,8 @@ function renderDualVariableResults(result) {
 
             <div class="stats-results-grid">
                 <div class="stats-card">
-                    <div class="stats-card-title">Correlación de Pearson (r)</div>
-                    <div class="stats-card-value">${corr.pearson_r}</div>
+                    <div class="stats-card-title">${methodLabel}</div>
+                    <div class="stats-card-value">${corr.coefficient}</div>
                     <div class="stats-card-subtitle">
                         ${corr.is_significant ? '✅ Significativa' : '❌ No significativa'} (p=${corr.p_value})
                     </div>
