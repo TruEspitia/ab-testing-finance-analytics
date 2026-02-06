@@ -178,7 +178,8 @@ function switchView(viewId) {
         'scm': 'Pruebas de Control (SCM)',
         'regression': 'Regresión / Curve Fitting',
         'clustering': 'Análisis de Clustering',
-        'quick-stats': 'Quick Stats'
+        'quick-stats': 'Quick Stats',
+        'monte-carlo': 'Simulación Monte Carlo'
     };
     document.getElementById('currentViewTitle').textContent = titleMap[viewId] || 'Análisis';
 
@@ -701,6 +702,7 @@ async function loadDatasets() {
         updateRegressionSection();
         updateClusteringSection();
         updateQuickStatsSection();
+        updateMonteCarloSection();
 
 
     } catch (error) {
@@ -1877,6 +1879,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initThemeToggle();
     await initRegressionForm();
     initClusteringForm();
+    initMonteCarloForm();
 
     // Cargar datasets existentes
     await loadDatasets();
@@ -1890,6 +1893,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('exportABExcel')?.addEventListener('click', () => handleExportExcel('ab_test'));
     document.getElementById('exportSCMExcel')?.addEventListener('click', () => handleExportExcel('scm'));
     document.getElementById('exportRegressionExcel')?.addEventListener('click', () => handleExportExcel('regression'));
+    document.getElementById('exportMonteCarloExcel')?.addEventListener('click', () => handleExportExcel('monte_carlo'));
 
     // Inicializar Tour
     document.getElementById('startTourBtn')?.addEventListener('click', (e) => {
@@ -2676,3 +2680,349 @@ function updateClusteringSection() {
         });
     }
 }
+
+// =============================================
+// Monte Carlo Simulation
+// =============================================
+
+/**
+ * Ejecuta simulación Monte Carlo
+ */
+async function runMonteCarlo(config) {
+    const response = await fetch(`${API_BASE_URL}/analyze/monte-carlo`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    });
+    return await response.json();
+}
+
+/**
+ * Inicializa el formulario de Monte Carlo
+ */
+function initMonteCarloForm() {
+    const form = document.getElementById('monteCarloForm');
+    const datasetSelect = document.getElementById('mcDataset');
+    const targetColumnSelect = document.getElementById('mcTargetColumn');
+
+    if (!form) return;
+
+    // Cuando se selecciona un dataset, cargar sus columnas
+    datasetSelect.addEventListener('change', async (e) => {
+        const datasetId = e.target.value;
+        if (!datasetId) {
+            targetColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>';
+            return;
+        }
+
+        try {
+            const result = await fetchDatasetPreview(datasetId, 1);
+            if (result.columns) {
+                targetColumnSelect.innerHTML = '<option value="">Selecciona columna...</option>';
+                result.columns.forEach(col => {
+                    targetColumnSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                });
+            }
+        } catch (error) {
+            showToast('Error al cargar columnas', 'error');
+        }
+    });
+
+    // Submit del formulario
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const datasetId = datasetSelect.value;
+        const targetColumn = targetColumnSelect.value;
+        const iterations = parseInt(document.getElementById('mcIterations').value);
+        const horizon = parseInt(document.getElementById('mcHorizon').value);
+        const driftInput = document.getElementById('mcDrift').value;
+        const volatilityInput = document.getElementById('mcVolatility').value;
+
+        if (!datasetId || !targetColumn) {
+            showToast('Por favor completa todos los campos requeridos', 'error');
+            return;
+        }
+
+        // Validar valores
+        if (iterations < 100 || iterations > 10000) {
+            showToast('El número de simulaciones debe estar entre 100 y 10,000', 'error');
+            return;
+        }
+
+        if (horizon < 1 || horizon > 365) {
+            showToast('El horizonte debe estar entre 1 y 365 períodos', 'error');
+            return;
+        }
+
+        const config = {
+            dataset_id: datasetId,
+            target_column: targetColumn,
+            iterations: iterations,
+            horizon: horizon,
+            drift: driftInput ? parseFloat(driftInput) : null,
+            volatility: volatilityInput ? parseFloat(volatilityInput) : null
+        };
+
+        setLoading(true);
+
+        try {
+            const result = await runMonteCarlo(config);
+
+            if (result.success) {
+                appState.lastMonteCarloResults = result;
+                displayMonteCarloResults(result);
+                showToast('Simulación Monte Carlo completada', 'success');
+            } else {
+                showToast(result.error || 'Error en la simulación', 'error');
+            }
+        } catch (error) {
+            showToast('Error al ejecutar simulación', 'error');
+            console.error('Monte Carlo error:', error);
+        } finally {
+            setLoading(false);
+        }
+    });
+}
+
+/**
+ * Muestra los resultados de Monte Carlo
+ */
+function displayMonteCarloResults(result) {
+    const resultsSection = document.getElementById('monteCarloResultsSection');
+    const resultsContent = document.getElementById('monteCarloResultsContent');
+
+    resultsSection.classList.remove('hidden');
+
+    if (!result.success || !result.simulations) {
+        resultsContent.innerHTML = `
+            <div class="error-message">
+                <p>${result.error || 'Error desconocido'}</p>
+            </div>
+        `;
+        return;
+    }
+
+    const metrics = result.metrics;
+
+    // Métricas principales
+    let metricsHtml = `
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-label">Valor Inicial</span>
+                <span class="metric-value">${metrics.initial_value.toFixed(2)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Valor Esperado Final</span>
+                <span class="metric-value">${metrics.expected_final_value.toFixed(2)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Mediana Final</span>
+                <span class="metric-value">${metrics.median_final_value.toFixed(2)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">VaR 95%</span>
+                <span class="metric-value">${metrics.var_95.toFixed(2)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Prob. Ganancia</span>
+                <span class="metric-value">${(metrics.probability_profit * 100).toFixed(1)}%</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Drift</span>
+                <span class="metric-value">${metrics.drift.toFixed(6)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Volatilidad</span>
+                <span class="metric-value">${metrics.volatility.toFixed(6)}</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Iteraciones</span>
+                <span class="metric-value">${metrics.iterations.toLocaleString()}</span>
+            </div>
+        </div>
+    `;
+
+    // Gráfico de trayectorias con bandas de confianza
+    let plotHtml = `
+        <h3 style="margin-top: var(--spacing-lg);">📈 Proyecciones</h3>
+        <div id="mcTrajectoriesPlot" style="margin-top: var(--spacing-sm);"></div>
+    `;
+
+    // Gráfico de distribución final
+    plotHtml += `
+        <h3 style="margin-top: var(--spacing-lg);">📊 Distribución de Valores Finales</h3>
+        <div id="mcDistributionPlot" style="margin-top: var(--spacing-sm);"></div>
+    `;
+
+    // Interpretación
+    let interpretationHtml = `
+        <div class="interpretation-box" style="margin-top: var(--spacing-lg);">
+            <h3>📝 Interpretación</h3>
+            <p style="white-space: pre-line;">${result.interpretation}</p>
+        </div>
+    `;
+
+    resultsContent.innerHTML = metricsHtml + plotHtml + interpretationHtml;
+
+    // Dibujar gráficos usando Plotly
+    renderMonteCarloCharts(result);
+}
+
+/**
+ * Renderiza los gráficos de Monte Carlo usando Plotly
+ */
+function renderMonteCarloCharts(result) {
+    const confidenceBands = result.confidence_bands;
+    const metrics = result.metrics;
+    const simulations = result.simulations;
+
+    // Eje X: períodos
+    const xValues = Array.from({ length: metrics.horizon + 1 }, (_, i) => i);
+
+    // Gráfico de trayectorias con bandas de confianza
+    const trajectoryTraces = [
+        {
+            x: xValues,
+            y: confidenceBands.p50,
+            name: 'Mediana (p50)',
+            line: { color: '#3b82f6', width: 3 },
+            type: 'scatter',
+            mode: 'lines'
+        },
+        {
+            x: xValues,
+            y: confidenceBands.p5,
+            name: 'p5',
+            line: { color: '#ef4444', width: 2, dash: 'dash' },
+            type: 'scatter',
+            mode: 'lines'
+        },
+        {
+            x: xValues,
+            y: confidenceBands.p95,
+            name: 'p95',
+            line: { color: '#22c55e', width: 2, dash: 'dash' },
+            type: 'scatter',
+            mode: 'lines'
+        },
+        {
+            x: xValues,
+            y: confidenceBands.p25,
+            name: 'p25',
+            line: { color: '#f59e0b', width: 1, dash: 'dot' },
+            type: 'scatter',
+            mode: 'lines'
+        },
+        {
+            x: xValues,
+            y: confidenceBands.p75,
+            name: 'p75',
+            line: { color: '#8b5cf6', width: 1, dash: 'dot' },
+            type: 'scatter',
+            mode: 'lines'
+        }
+    ];
+
+    // Agregar algunas trayectorias de muestra (máximo 50 para no sobrecargar)
+    const sampleSize = Math.min(50, simulations.length);
+    const step = Math.floor(simulations.length / sampleSize);
+    for (let i = 0; i < sampleSize; i++) {
+        const idx = i * step;
+        if (idx < simulations.length) {
+            trajectoryTraces.push({
+                x: xValues,
+                y: simulations[idx],
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: 'rgba(156, 163, 175, 0.2)', width: 1 },
+                showlegend: false,
+                hoverinfo: 'none'
+            });
+        }
+    }
+
+    const trajectoryLayout = {
+        title: 'Trayectorias Simuladas con Bandas de Confianza',
+        xaxis: { title: 'Período' },
+        yaxis: { title: 'Valor' },
+        template: appState.theme === 'dark' ? 'plotly_dark' : 'plotly_white',
+        height: 500
+    };
+
+    Plotly.newPlot('mcTrajectoriesPlot', trajectoryTraces, trajectoryLayout, { responsive: true });
+
+    // Gráfico de distribución final (histograma)
+    const distributionTrace = {
+        x: result.final_distribution.values,
+        type: 'histogram',
+        nbinsx: 50,
+        marker: { color: '#3b82f6', opacity: 0.7 },
+        name: 'Frecuencia'
+    };
+
+    // Línea vertical para el valor esperado
+    const expectedLine = {
+        type: 'scatter',
+        mode: 'lines',
+        x: [metrics.expected_final_value, metrics.expected_final_value],
+        y: [0, 1],
+        yaxis: 'y2',
+        line: { color: '#22c55e', width: 3, dash: 'dash' },
+        name: 'Valor Esperado',
+        showlegend: true
+    };
+
+    // Línea vertical para el VaR 95%
+    const varLine = {
+        type: 'scatter',
+        mode: 'lines',
+        x: [metrics.var_95, metrics.var_95],
+        y: [0, 1],
+        yaxis: 'y2',
+        line: { color: '#ef4444', width: 3, dash: 'dash' },
+        name: 'VaR 95%',
+        showlegend: true
+    };
+
+    const distributionLayout = {
+        title: 'Distribución de Valores Finales',
+        xaxis: { title: 'Valor Final' },
+        yaxis: { title: 'Frecuencia' },
+        yaxis2: {
+            overlaying: 'y',
+            side: 'right',
+            showgrid: false,
+            showticklabels: false,
+            range: [0, 1]
+        },
+        template: appState.theme === 'dark' ? 'plotly_dark' : 'plotly_white',
+        height: 400,
+        showlegend: true
+    };
+
+    Plotly.newPlot('mcDistributionPlot', [distributionTrace, expectedLine, varLine], distributionLayout, { responsive: true });
+}
+
+/**
+ * Actualiza la sección de Monte Carlo cuando hay datasets cargados
+ */
+function updateMonteCarloSection() {
+    const monteCarloSection = document.getElementById('monteCarloSection');
+    const mcDatasetSelect = document.getElementById('mcDataset');
+
+    if (!monteCarloSection || !mcDatasetSelect) return;
+
+    if (appState.datasets.length > 0) {
+        monteCarloSection.classList.remove('hidden');
+
+        // Actualizar selector de datasets
+        mcDatasetSelect.innerHTML = '<option value="">Selecciona un dataset...</option>';
+        appState.datasets.forEach(dataset => {
+            mcDatasetSelect.innerHTML += `<option value="${dataset.id}">${dataset.name}</option>`;
+        });
+    }
+}
+

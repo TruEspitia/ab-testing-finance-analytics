@@ -66,6 +66,12 @@
                                 <span>Pruebas de Control</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="monte-carlo" id="nav-monte-carlo">
+                                <span class="material-icons">trending_up</span>
+                                <span>Monte Carlo</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -683,6 +689,97 @@
                             Resultados
                         </h2>
                         <div id="quickStatsResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Monte Carlo View -->
+                <div id="view-monte-carlo" class="analysis-view hidden">
+                    <!-- Monte Carlo Configuration Section -->
+                    <section class="glass-card monte-carlo-section" id="monteCarloSection">
+                        <h2 class="section-title">
+                            <span class="icon">🎲</span>
+                            Simulación Monte Carlo
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Proyecta valores futuros usando Movimiento Browniano Geométrico con bandas de confianza y
+                            métricas de riesgo.
+                        </p>
+
+                        <form id="monteCarloForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcDataset">Dataset</label>
+                                    <select id="mcDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcTargetColumn">Variable a Proyectar</label>
+                                    <select id="mcTargetColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Columna con datos históricos financieros</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcIterations">Número de Simulaciones</label>
+                                    <input type="number" id="mcIterations" class="text-input" value="1000" min="100"
+                                        max="10000" step="100" required>
+                                    <small>Entre 100 y 10,000 iteraciones</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="mcHorizon">Horizonte Temporal (períodos)</label>
+                                    <input type="number" id="mcHorizon" class="text-input" value="30" min="1" max="365"
+                                        required>
+                                    <small>Número de períodos futuro a proyectar</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcDrift">Drift (opcional)</label>
+                                    <input type="number" id="mcDrift" class="text-input" step="0.0001"
+                                        placeholder="Auto">
+                                    <small>Tendencia (se auto-calcula si está vacío)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="mcVolatility">Volatilidad (opcional)</label>
+                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001"
+                                        placeholder="Auto">
+                                    <small>Desviación estándar (se auto-calcula si está vacío)</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🎲</span> Ejecutar Simulación
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Monte Carlo Results Section -->
+                    <section class="glass-card monte-carlo-results-section hidden" id="monteCarloResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Monte Carlo
+                            </span>
+                            <button id="exportMonteCarloExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="monteCarloResultsContent">
                             <!-- Los resultados se insertarán dinámicamente aquí -->
                         </div>
                     </section>

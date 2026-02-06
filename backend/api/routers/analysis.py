@@ -12,7 +12,9 @@ from backend.models import (
     SCMConfig,
     SCMResult,
     RegressionConfig,
-    RegressionResult
+    RegressionResult,
+    MonteCarloConfig,
+    MonteCarloResult
 )
 from backend.dataset_manager import dataset_manager
 from backend.ab_testing import ABTestAnalyzer
@@ -319,3 +321,60 @@ async def perform_regression(config: RegressionConfig):
             engine_used=config.engine_type,
             error=f"Error inesperado: {str(e)}"
         )
+
+
+@router.post("/analyze/monte-carlo", response_model=MonteCarloResult)
+async def perform_monte_carlo(config: MonteCarloConfig):
+    """
+    Ejecuta simulación Monte Carlo sobre una variable financiera
+    
+    Utiliza Movimiento Browniano Geométrico (GBM) para proyectar
+    valores futuros con bandas de confianza y métricas de riesgo.
+    
+    Args:
+        config: Configuración con dataset_id, columna objetivo, iteraciones, horizonte
+        
+    Returns:
+        MonteCarloResult con trayectorias simuladas, bandas de confianza y métricas
+    """
+    from backend.monte_carlo import MonteCarloAnalyzer
+    
+    try:
+        # Obtener el dataset
+        df = dataset_manager.get_dataset(config.dataset_id)
+        
+        if df is None:
+            raise HTTPException(status_code=404, detail="Dataset no encontrado")
+        
+        # Validar columna objetivo
+        if config.target_column not in df.columns:
+            return MonteCarloResult(
+                success=False,
+                dataset_id=config.dataset_id,
+                error=f"Columna '{config.target_column}' no encontrada"
+            )
+        
+        # Crear analizador
+        analyzer = MonteCarloAnalyzer(df)
+        
+        # Ejecutar simulación
+        results = analyzer.analyze(
+            target_column=config.target_column,
+            iterations=config.iterations,
+            horizon=config.horizon,
+            drift=config.drift,
+            volatility=config.volatility
+        )
+        
+        # Agregar dataset_id
+        results['dataset_id'] = config.dataset_id
+        
+        return MonteCarloResult(**results)
+        
+    except Exception as e:
+        return MonteCarloResult(
+            success=False,
+            dataset_id=config.dataset_id,
+            error=f"Error inesperado: {str(e)}"
+        )
+

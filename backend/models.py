@@ -283,3 +283,40 @@ class ElbowPlotRequest(BaseModel):
     feature_columns: List[str]
     max_k: int = Field(10, description="Máximo número de clusters a probar")
 
+
+# =============================================
+# Modelos para Monte Carlo Simulation
+# =============================================
+
+class MonteCarloConfig(BaseModel):
+    """Configuración para simulación Monte Carlo"""
+    dataset_id: str
+    target_column: str = Field(..., description="Columna que contiene la variable a proyectar")
+    iterations: int = Field(1000, description="Número de simulaciones a realizar", ge=100, le=10000)
+    horizon: int = Field(30, description="Horizonte temporal (número de períodos futuros)", ge=1, le=365)
+    drift: Optional[float] = Field(None, description="Drift manual (si None, se estima automáticamente)")
+    volatility: Optional[float] = Field(None, description="Volatilidad manual (si None, se estima automáticamente)")
+
+
+class MonteCarloResult(BaseModel):
+    """Resultados de la simulación Monte Carlo"""
+    success: bool
+    dataset_id: str
+    
+    # Simulaciones completas
+    simulations: Optional[List[List[float]]] = None
+    
+    # Bandas de confianza (percentiles 5, 25, 50, 75, 95)
+    confidence_bands: Optional[Dict[str, List[float]]] = None
+    
+    # Métricas financieras
+    metrics: Optional[Dict[str, float]] = None
+    
+    # Distribución final
+    final_distribution: Optional[Dict[str, Any]] = None
+    
+    # Interpretación
+    interpretation: str = ""
+    
+    # Error si lo hay
+    error: Optional[str] = None
