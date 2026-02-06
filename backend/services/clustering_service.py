@@ -97,17 +97,33 @@ class ClusteringService:
             silhouette = silhouette_score(X_scaled, clusters) if len(set(clusters)) > 1 else 0.0
             davies_bouldin = davies_bouldin_score(X_scaled, clusters) if len(set(clusters)) > 1 else 0.0
             
-            # Reducción dimensional para visualización
-            pca = PCA(n_components=2)
-            X_pca = pca.fit_transform(X_scaled)
+            # Preparar visualización (PCA si > 2 dimensiones, o vars originales si == 2)
+            if len(feature_columns) == 2:
+                # Usar features originales (escalados) para visualización más clara
+                plot_x = X_scaled[:, 0]
+                plot_y = X_scaled[:, 1]
+                xlabel = feature_columns[0]
+                ylabel = feature_columns[1]
+                title_suffix = ""
+            else:
+                # Reducción dimensional para visualización
+                pca = PCA(n_components=2)
+                X_pca = pca.fit_transform(X_scaled)
+                plot_x = X_pca[:, 0]
+                plot_y = X_pca[:, 1]
+                xlabel = 'Componente Principal 1'
+                ylabel = 'Componente Principal 2'
+                title_suffix = "\n(Reducción PCA)"
             
             # Generar visualización
             fig, ax = plt.subplots(figsize=(10, 6))
-            scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], c=clusters, cmap='viridis', alpha=0.6)
+            scatter = ax.scatter(plot_x, plot_y, c=clusters, cmap='viridis', alpha=0.6)
             plt.colorbar(scatter, ax=ax, label='Cluster')
-            ax.set_title(f'K-Means Clustering (k={n_clusters})\nSilhouette Score: {silhouette:.3f}')
-            ax.set_xlabel('Componente Principal 1')
-            ax.set_ylabel('Componente Principal 2')
+            
+            # Título y etiquetas
+            ax.set_title(f'K-Means Clustering (k={n_clusters})\nSilhouette Score: {silhouette:.3f}{title_suffix}')
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.3)
             
             # Convertir a base64
@@ -136,7 +152,7 @@ class ClusteringService:
                 'silhouette_score': float(silhouette),
                 'davies_bouldin_score': float(davies_bouldin),
                 'cluster_stats': cluster_stats,
-                'pca_coordinates': X_pca.tolist(),
+                'pca_coordinates': np.column_stack((plot_x, plot_y)).tolist(), # Return the coordinates actually plotted
                 'plot_base64': plot_base64,
                 'inertia': float(kmeans.inertia_)
             }
@@ -188,17 +204,31 @@ class ClusteringService:
                 silhouette = 0.0
                 davies_bouldin = 0.0
             
-            # Reducción dimensional para visualización
-            pca = PCA(n_components=2)
-            X_pca = pca.fit_transform(X_scaled)
+            # Preparar visualización (PCA si > 2 dimensiones, o vars originales si == 2)
+            if len(feature_columns) == 2:
+                # Usar features originales (escalados) para visualización más clara
+                plot_x = X_scaled[:, 0]
+                plot_y = X_scaled[:, 1]
+                xlabel = feature_columns[0]
+                ylabel = feature_columns[1]
+                title_suffix = ""
+            else:
+                # Reducción dimensional para visualización
+                pca = PCA(n_components=2)
+                X_pca = pca.fit_transform(X_scaled)
+                plot_x = X_pca[:, 0]
+                plot_y = X_pca[:, 1]
+                xlabel = 'Componente Principal 1'
+                ylabel = 'Componente Principal 2'
+                title_suffix = "\n(Reducción PCA)"
             
             # Generar visualización
             fig, ax = plt.subplots(figsize=(10, 6))
-            scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], c=clusters, cmap='viridis', alpha=0.6)
+            scatter = ax.scatter(plot_x, plot_y, c=clusters, cmap='viridis', alpha=0.6)
             plt.colorbar(scatter, ax=ax, label='Cluster')
-            ax.set_title(f'DBSCAN Clustering\nClusters: {n_clusters}, Noise: {n_noise}, Silhouette: {silhouette:.3f}')
-            ax.set_xlabel('Componente Principal 1')
-            ax.set_ylabel('Componente Principal 2')
+            ax.set_title(f'DBSCAN Clustering\nClusters: {n_clusters}, Noise: {n_noise}, Silhouette: {silhouette:.3f}{title_suffix}')
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.3)
             
             # Convertir a base64
@@ -228,7 +258,7 @@ class ClusteringService:
                 'silhouette_score': float(silhouette),
                 'davies_bouldin_score': float(davies_bouldin),
                 'cluster_stats': cluster_stats,
-                'pca_coordinates': X_pca.tolist(),
+                'pca_coordinates': np.column_stack((plot_x, plot_y)).tolist(),
                 'plot_base64': plot_base64,
                 'eps': eps,
                 'min_samples': min_samples

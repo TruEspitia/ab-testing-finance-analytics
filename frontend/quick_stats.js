@@ -304,6 +304,14 @@ function renderSingleVariableResults(result) {
     // Render plot
     if (result.plot) {
         const plotData = JSON.parse(result.plot);
+
+        // Helper to get current theme color
+        const textColor = getComputedStyle(document.body).getPropertyValue('--text-primary').trim();
+
+        // Override font colors for visibility
+        if (!plotData.layout.font) plotData.layout.font = {};
+        plotData.layout.font.color = textColor;
+
         Plotly.newPlot('quickStatsPlot', plotData.data, plotData.layout, { responsive: true, displayModeBar: false });
     }
 }
@@ -380,13 +388,15 @@ function renderDualVariableResults(result) {
 
         // Render 3D Plot
         if (result.plot_3d) {
+            const textColor = getComputedStyle(document.body).getPropertyValue('--text-primary').trim();
+
             const layout3d = {
                 title: 'Análisis de Relación 3D',
                 autosize: true,
                 scene: {
-                    xaxis: { title: result.variable_x },
-                    yaxis: { title: result.variable_y },
-                    zaxis: { title: 'Divergencia (Rank Diff)' },
+                    xaxis: { title: result.variable_x, titlefont: { color: textColor }, tickfont: { color: textColor } },
+                    yaxis: { title: result.variable_y, titlefont: { color: textColor }, tickfont: { color: textColor } },
+                    zaxis: { title: 'Divergencia (Rank Diff)', titlefont: { color: textColor }, tickfont: { color: textColor } },
                     camera: {
                         eye: { x: 1.5, y: 1.5, z: 1.5 }
                     }
@@ -394,7 +404,7 @@ function renderDualVariableResults(result) {
                 margin: { l: 0, r: 0, b: 0, t: 30 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#f8fafc' }
+                font: { color: textColor }
             };
 
             Plotly.newPlot('quickStatsPlot3D', [result.plot_3d], layout3d, { responsive: true, displayModeBar: true });
@@ -477,26 +487,41 @@ function renderDualVariableResults(result) {
             </div>
         `;
 
+        // Helper to get current theme color
+        const getThemeColor = () => getComputedStyle(document.body).getPropertyValue('--text-primary').trim();
+
         // Render 2D plot
         if (result.plot) {
             const plotData = JSON.parse(result.plot);
+            const textColor = getThemeColor();
+
+            // Override font colors for visibility
+            if (!plotData.layout.font) plotData.layout.font = {};
+            plotData.layout.font.color = textColor;
+
+            // Ensure titles are colored correctly
+            if (plotData.layout.title) plotData.layout.title.font = { color: textColor };
+            if (plotData.layout.xaxis && plotData.layout.xaxis.title) plotData.layout.xaxis.title.font = { color: textColor };
+            if (plotData.layout.yaxis && plotData.layout.yaxis.title) plotData.layout.yaxis.title.font = { color: textColor };
+
             Plotly.newPlot('quickStatsPlot', plotData.data, plotData.layout, { responsive: true, displayModeBar: false });
         }
 
         // Render 3D plot if available
         if (result.plot_3d) {
+            const textColor = getThemeColor();
             const layout3d = {
                 title: 'Relación 3D',
                 autosize: true,
                 scene: {
-                    xaxis: { title: result.variable_x },
-                    yaxis: { title: result.variable_y },
-                    zaxis: { title: 'Divergencia' },
+                    xaxis: { title: result.variable_x, titlefont: { color: textColor }, tickfont: { color: textColor } },
+                    yaxis: { title: result.variable_y, titlefont: { color: textColor }, tickfont: { color: textColor } },
+                    zaxis: { title: 'Divergencia', titlefont: { color: textColor }, tickfont: { color: textColor } },
                 },
                 margin: { l: 0, r: 0, b: 0, t: 30 },
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#f8fafc' }
+                font: { color: textColor }
             };
             Plotly.newPlot('quickStatsPlot3D', [result.plot_3d], layout3d, { responsive: true, displayModeBar: true });
         }
