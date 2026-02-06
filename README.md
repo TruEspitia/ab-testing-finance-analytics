@@ -17,11 +17,12 @@ Este proyecto demuestra cómo diseñar y evaluar pruebas A/B para campañas de m
 - Detección automática de encoding y delimitadores
 - Validación de datos y manejo de errores
 
-🧪 **Análisis A/B Testing**
-- Pruebas estadísticas (Chi-cuadrado, t-test)
-- Cálculo automático de métricas
-- Interpretación en lenguaje natural
-- Visualización de resultados
+🧪 **Análisis Avanzado**
+- **A/B Testing**: Pruebas estadísticas (Chi-cuadrado, t-test) con interpretación automática.
+- **Simulación Monte Carlo**: Proyecciones financieras usando Movimiento Browniano Geométrico (GBM).
+- **Clustering**: Segmentación de datos usando K-Means y DBSCAN.
+- **Regresión**: Ajuste de curvas y funciones matemáticas complejas.
+- **Quick Stats**: Análisis rápido de una y dos variables.
 
 🔧 **Backend API RESTful**
 - FastAPI con endpoints documentados
@@ -36,55 +37,41 @@ Este proyecto demuestra cómo diseñar y evaluar pruebas A/B para campañas de m
 ab-testing-finance-analytics/
 │
 ├── backend/                    # Backend FastAPI
+│   ├── api/routers             # Endpoints organizados por módulos
 │   ├── main.py                 # Aplicación principal
-│   ├── routes.py               # API endpoints
-│   ├── models.py               # Modelos Pydantic
-│   ├── data_loader.py          # Cargador multi-formato
+│   ├── monte_carlo.py          # Lógica de simulación financiera
 │   ├── dataset_manager.py      # Gestor de datasets
-│   └── ab_testing.py           # Lógica de análisis
+│   └── ...                     # Otros módulos de análisis
 │
 ├── frontend/                   # Frontend web
 │   ├── index.html              # Página principal
 │   ├── styles.css              # Estilos glassmorphism
 │   └── app.js                  # Lógica JavaScript
 │
-├── streamlit_app/              # App Streamlit (alternativa)
-│   └── app.py
-│
-├── data/                       # Datos de ejemplo
-│   └── customers.csv
-│
-├── notebooks/                  # Jupyter notebooks
+├── sample_data/                # Datos de ejemplo para pruebas
 ├── requirements.txt            # Dependencias
+├── run.py                      # Script de inicio rápido
 └── README.md
 ```
 
 ---
 
-## 🛠️ Instalación
+## 🛠️ Instalación Rápida
 
-### 1. Clonar el repositorio
+### 1. Clonar y configurar
 
 ```bash
 git clone https://github.com/Terraspace009/ab-testing-finance-analytics.git
 cd ab-testing-finance-analytics
-```
 
-### 2. Crear entorno virtual
-
-```bash
+# Crear entorno virtual
 python -m venv .venv
-
-# Windows
+# Activar (Windows)
 .venv\Scripts\activate
-
-# Linux/Mac
+# Activar (Linux/Mac)
 source .venv/bin/activate
-```
 
-### 3. Instalar dependencias
-
-```bash
+# Instalar dependencias
 pip install -r requirements.txt
 ```
 
@@ -92,30 +79,22 @@ pip install -r requirements.txt
 
 ## 🚀 Uso
 
-### Opción 1: Aplicación Web (Recomendado)
+### Iniciar Aplicación (Recomendado)
 
-Inicia el servidor FastAPI:
-
-```bash
-cd backend
-uvicorn main:app --reload
-```
-
-Abre tu navegador en: **http://localhost:8000**
-
-#### Flujo de trabajo:
-
-1. **Cargar datos**: Arrastra un archivo CSV, XLSX o JSON
-2. **Ver preview**: Visualiza las primeras filas del dataset
-3. **Configurar análisis**: Selecciona columnas y grupos
-4. **Ejecutar análisis**: Obtén resultados estadísticos
-5. **Visualizar**: Gráficos interactivos de resultados
-
-### Opción 2: Streamlit (Interfaz Simple)
+Simplemente ejecuta el script de inicio rápido:
 
 ```bash
-streamlit run streamlit_app/app.py
+python run.py
 ```
+
+Esto iniciará el servidor y **abrirá automáticamente tu navegador** en: **http://localhost:8080**
+
+### Flujo de trabajo:
+
+1. **Cargar datos**: Sube un archivo en `sample_data/` para probar.
+2. **Explorar**: Usa "Quick Stats" para ver un resumen rápido.
+3. **Analizar**: Navega entre A/B Testing, Monte Carlo, Clustering o Regresión.
+4. **Exportar**: Descarga los resultados en formato Excel.
 
 ---
 
