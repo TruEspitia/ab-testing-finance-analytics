@@ -30,7 +30,7 @@ class DualVariableRequest(BaseModel):
     dataset_id: str
     variable_x: str
     variable_y: str
-    correlation_type: Optional[str] = "pearson" # "pearson", "spearman", "kendall"
+    correlation_type: Optional[str] = "pearson" # "pearson", "spearman", "kendall", "full"
 
 
 @router.post("/single")
@@ -251,101 +251,152 @@ async def analyze_dual_variables(request: DualVariableRequest):
     
     try:
         # Calcular correlación según el tipo solicitado
-        corr_type = request.correlation_type.lower() if request.correlation_type else "pearson"
+        requested_type = request.correlation_type.lower() if request.correlation_type else "pearson"
         
-        if corr_type == "spearman":
-            correlation, p_value = stats.spearmanr(x, y)
-            method_name = "Spearman (ρ)"
-        elif corr_type == "kendall":
-            correlation, p_value = stats.kendalltau(x, y)
-            method_name = "Kendall (τ)"
-        else:
-            correlation, p_value = stats.pearsonr(x, y)
-            method_name = "Pearson (r)"
-            corr_type = "pearson"
+        results = {}
         
-        # Calcular regresión lineal (siempre Pearson para la línea de tendencia básica)
-        slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
+        # Helper function to interpret strength
+        def get_interpretation(corr_val, name):
+            if abs(corr_val) >= 0.7: strength = "fuerte"
+            elif abs(corr_val) >= 0.4: strength = "moderada"
+            elif abs(corr_val) >= 0.2: strength = "débil"
+            else: strength = "muy débil o nula"
+            direction = "positiva" if corr_val > 0 else "negativa"
+            return f"Correlación {strength} {direction} ({name})"
+
+        # Generate 3D data (Z-axis is "movement" or normalized rank difference to visualize non-linearity)
+        # For visualization purposes, let's create a "Movement" metric
+        # This represents how much the rank changes between X and Y
+        x_rank = stats.rankdata(x)
+        y_rank = stats.rankdata(y)
+        z_movement = np.abs(x_rank - y_rank)
+        # Normalize Z to be somewhat comparable to data scale for visualization
+        z_scale = (float(x.max()) - float(x.min()) + float(y.max()) - float(y.min())) / 2
+        if z_scale == 0: z_scale = 1
+        z_values = (z_movement / len(x)) * z_scale
         
-        # Convert pandas series to lists for Plotly compatibility
-        x_list = x.tolist()
-        y_list = y.tolist()
-        
-        # Crear scatter plot
-        fig = go.Figure()
-        
-        # Puntos
-        fig.add_trace(go.Scatter(
-            x=x_list,
-            y=y_list,
-            mode='markers',
-            name='Datos',
-            marker=dict(
-                size=8,
-                color='rgba(99, 102, 241, 0.6)',
-                line=dict(width=1, color='white')
-            )
-        ))
-        
-        # Línea de tendencia
-        x_range = np.linspace(float(x.min()), float(x.max()), 100)
-        y_trend = slope * x_range + intercept
-        
-        fig.add_trace(go.Scatter(
-            x=x_range.tolist(),
-            y=y_trend.tolist(),
-            mode='lines',
-            name=f'Tendencia (R²={r_value**2:.3f})',
-            line=dict(color='red', width=2, dash='dash')
-        ))
-        
-        fig.update_layout(
-            title=f'{request.variable_y} vs {request.variable_x} ({method_name})',
-            xaxis_title=request.variable_x,
-            yaxis_title=request.variable_y,
-            plot_bgcolor='rgba(255, 255, 255, 0.03)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#f8fafc'),
-            showlegend=True,
-            hovermode='closest'
-        )
-        
-        # Interpretación de la correlación
-        if abs(correlation) >= 0.7:
-            strength = "fuerte"
-        elif abs(correlation) >= 0.4:
-            strength = "moderada"
-        elif abs(correlation) >= 0.2:
-            strength = "débil"
-        else:
-            strength = "muy débil o nula"
-        
-        direction = "positiva" if correlation > 0 else "negativa"
-        
-        interpretation = f"Existe una correlación {strength} {direction} ({method_name}) entre las variables."
-        
-        return {
-            "success": True,
-            "variable_x": request.variable_x,
-            "variable_y": request.variable_y,
-            "correlation_type": corr_type,
-            "correlation_method": method_name,
-            "n_observations": int(len(data)),
-            "correlation": {
-                "coefficient": round(float(correlation), 4),
-                "p_value": round(float(p_value), 6),
-                "r_squared": round(float(r_value ** 2), 4),
-                "is_significant": bool(p_value < 0.05)
+        # Prepare 3D plot data
+        plot_data_3d = {
+            "x": x.tolist(),
+            "y": y.tolist(),
+            "z": z_values.tolist(),
+            "mode": "markers",
+            "marker": {
+                "size": 5,
+                "color": z_values.tolist(),
+                "colorscale": "Viridis",
+                "opacity": 0.8
             },
-            "regression": {
-                "slope": round(float(slope), 4),
-                "intercept": round(float(intercept), 4),
-                "std_error": round(float(std_err), 4),
-                "equation": f"y = {slope:.4f}x + {intercept:.4f}"
-            },
-            "interpretation": interpretation,
-            "plot": fig.to_json()
+            "type": "scatter3d"
         }
+
+        if requested_type == "full":
+            # Calculate all three
+            pearson_r, pearson_p = stats.pearsonr(x, y)
+            spearman_r, spearman_p = stats.spearmanr(x, y)
+            kendall_r, kendall_p = stats.kendalltau(x, y)
+            
+            # Linear Regression for trend line (always useful context)
+            slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
+            
+            return {
+                "success": True,
+                "variable_x": request.variable_x,
+                "variable_y": request.variable_y,
+                "correlation_type": "full",
+                "n_observations": int(len(data)),
+                "results": {
+                    "pearson": {
+                        "name": "Pearson (r)",
+                        "coefficient": round(float(pearson_r), 4),
+                        "p_value": round(float(pearson_p), 6),
+                        "is_significant": bool(pearson_p < 0.05),
+                        "interpretation": get_interpretation(pearson_r, "Pearson")
+                    },
+                    "spearman": {
+                        "name": "Spearman (ρ)",
+                        "coefficient": round(float(spearman_r), 4),
+                        "p_value": round(float(spearman_p), 6),
+                        "is_significant": bool(spearman_p < 0.05),
+                        "interpretation": get_interpretation(spearman_r, "Spearman")
+                    },
+                    "kendall": {
+                        "name": "Kendall (τ)",
+                        "coefficient": round(float(kendall_r), 4),
+                        "p_value": round(float(kendall_p), 6),
+                        "is_significant": bool(kendall_p < 0.05),
+                        "interpretation": get_interpretation(kendall_r, "Kendall")
+                    }
+                },
+                "regression": {
+                    "slope": round(float(slope), 4),
+                    "intercept": round(float(intercept), 4),
+                    "std_error": round(float(std_err), 4),
+                    "equation": f"y = {slope:.4f}x + {intercept:.4f}",
+                    "r_squared": round(float(r_value ** 2), 4)
+                },
+                "plot_3d": plot_data_3d
+            }
+            
+        else:
+            # Single analysis logic (existing + refined)
+            if requested_type == "spearman":
+                correlation, p_value = stats.spearmanr(x, y)
+                method_name = "Spearman (ρ)"
+            elif requested_type == "kendall":
+                correlation, p_value = stats.kendalltau(x, y)
+                method_name = "Kendall (τ)"
+            else:
+                correlation, p_value = stats.pearsonr(x, y)
+                method_name = "Pearson (r)"
+                requested_type = "pearson"
+            
+            # Calcular regresión lineal
+            slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
+            
+            # 2D Plot logic (Standard Scatter)
+            x_range = np.linspace(float(x.min()), float(x.max()), 100)
+            y_trend = slope * x_range + intercept
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=x.tolist(), y=y.tolist(), mode='markers', name='Datos',
+                marker=dict(size=8, color='rgba(99, 102, 241, 0.6)', line=dict(width=1, color='white'))
+            ))
+            fig.add_trace(go.Scatter(
+                x=x_range.tolist(), y=y_trend.tolist(), mode='lines', 
+                name=f'Tendencia (R²={r_value**2:.3f})', line=dict(color='red', width=2, dash='dash')
+            ))
+            fig.update_layout(
+                title=f'{request.variable_y} vs {request.variable_x} ({method_name})',
+                xaxis_title=request.variable_x, yaxis_title=request.variable_y,
+                plot_bgcolor='rgba(255, 255, 255, 0.03)', paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#f8fafc'), showlegend=True
+            )
+            
+            return {
+                "success": True,
+                "variable_x": request.variable_x,
+                "variable_y": request.variable_y,
+                "correlation_type": requested_type,
+                "correlation_method": method_name,
+                "n_observations": int(len(data)),
+                "correlation": {
+                    "coefficient": round(float(correlation), 4),
+                    "p_value": round(float(p_value), 6),
+                    "r_squared": round(float(r_value ** 2), 4),
+                    "is_significant": bool(p_value < 0.05)
+                },
+                "regression": {
+                    "slope": round(float(slope), 4),
+                    "intercept": round(float(intercept), 4),
+                    "std_error": round(float(std_err), 4),
+                    "equation": f"y = {slope:.4f}x + {intercept:.4f}"
+                },
+                "interpretation": get_interpretation(correlation, method_name),
+                "plot": fig.to_json(),
+                "plot_3d": plot_data_3d # Also return 3D data for single analysis if UI wants it
+            }
         
     except Exception as e:
         logger.error(f"Error in analyze_dual_variables: {str(e)}")

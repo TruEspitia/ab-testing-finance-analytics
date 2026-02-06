@@ -314,78 +314,192 @@ function renderSingleVariableResults(result) {
 function renderDualVariableResults(result) {
     const container = document.getElementById('quickStatsResultsContent');
 
-    const corr = result.correlation;
-    const methodLabel = result.correlation_method || 'Correlación de Pearson (r)';
-    let strengthClass = 'weak';
-    if (Math.abs(corr.coefficient) >= 0.7) strengthClass = 'strong';
-    else if (Math.abs(corr.coefficient) >= 0.4) strengthClass = 'moderate';
+    if (result.correlation_type === 'full') {
+        const res = result.results;
 
-    container.innerHTML = `
-        <div class="stats-section">
-            <h3 class="stats-section-title">
-                🔗 Relación: ${result.variable_y} vs ${result.variable_x}
-                <span class="correlation-badge ${strengthClass}">
-                    ${methodLabel.split(' ')[0]} = ${corr.coefficient}
-                </span>
-            </h3>
-
-            <div class="interpretation-box" style="margin-bottom: var(--spacing-lg);">
-                ${result.interpretation}
-            </div>
-
-            <div class="stats-results-grid">
-                <div class="stats-card">
-                    <div class="stats-card-title">${methodLabel}</div>
-                    <div class="stats-card-value">${corr.coefficient}</div>
-                    <div class="stats-card-subtitle">
-                        ${corr.is_significant ? '✅ Significativa' : '❌ No significativa'} (p=${corr.p_value})
+        container.innerHTML = `
+            <div class="stats-section">
+                <h3 class="stats-section-title">
+                    🔮 Análisis Completo: ${result.variable_y} vs ${result.variable_x}
+                </h3>
+                
+                <div class="stats-results-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+                    <!-- Pearson -->
+                    <div class="glass-card" style="padding: var(--spacing-md);">
+                        <h4>${res.pearson.name}</h4>
+                        <div class="stats-card-value">${res.pearson.coefficient}</div>
+                        <div class="stats-card-subtitle">
+                           ${res.pearson.interpretation}
+                        </div>
+                        <div class="stats-card-subtitle">
+                           p-value: ${res.pearson.p_value} (${res.pearson.is_significant ? 'Significativo' : 'No Sig.'})
+                        </div>
+                    </div>
+                    
+                    <!-- Spearman -->
+                    <div class="glass-card" style="padding: var(--spacing-md);">
+                        <h4>${res.spearman.name}</h4>
+                        <div class="stats-card-value">${res.spearman.coefficient}</div>
+                        <div class="stats-card-subtitle">
+                           ${res.spearman.interpretation}
+                        </div>
+                         <div class="stats-card-subtitle">
+                           p-value: ${res.spearman.p_value} (${res.spearman.is_significant ? 'Significativo' : 'No Sig.'})
+                        </div>
+                    </div>
+                    
+                    <!-- Kendall -->
+                    <div class="glass-card" style="padding: var(--spacing-md);">
+                        <h4>${res.kendall.name}</h4>
+                        <div class="stats-card-value">${res.kendall.coefficient}</div>
+                         <div class="stats-card-subtitle">
+                           ${res.kendall.interpretation}
+                        </div>
+                        <div class="stats-card-subtitle">
+                           p-value: ${res.kendall.p_value} (${res.kendall.is_significant ? 'Significativo' : 'No Sig.'})
+                        </div>
                     </div>
                 </div>
-                <div class="stats-card">
-                    <div class="stats-card-title">R² (Coef. Determinación)</div>
-                    <div class="stats-card-value">${corr.r_squared}</div>
-                    <div class="stats-card-subtitle">
-                        ${(corr.r_squared * 100).toFixed(1)}% de varianza explicada
-                    </div>
-                </div>
-                <div class="stats-card">
-                    <div class="stats-card-title">Observaciones</div>
-                    <div class="stats-card-value">${result.n_observations.toLocaleString()}</div>
-                </div>
-            </div>
 
-            <div class="glass-card" style="padding: var(--spacing-md); margin-top: var(--spacing-lg);">
-                <h4>📐 Ecuación de Regresión Lineal</h4>
-                <p style="font-size: 1.25rem; font-family: monospace; margin-top: var(--spacing-sm); color: var(--primary);">
-                    ${result.regression.equation}
-                </p>
-                <div style="margin-top: var(--spacing-md); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-sm);">
-                    <div>
-                        <span style="color: var(--text-muted);">Pendiente:</span>
-                        <strong>${result.regression.slope}</strong>
-                    </div>
-                    <div>
-                        <span style="color: var(--text-muted);">Intercepto:</span>
-                        <strong>${result.regression.intercept}</strong>
-                    </div>
-                    <div>
-                        <span style="color: var(--text-muted);">Error Estándar:</span>
-                        <strong>${result.regression.std_error}</strong>
-                    </div>
+                 <div class="glass-card" style="padding: var(--spacing-md); margin-top: var(--spacing-lg);">
+                    <h4>📐 Regresión Lineal (Referencia)</h4>
+                    <p style="font-family: monospace; color: var(--primary);">
+                        ${result.regression.equation} (R² = ${result.regression.r_squared})
+                    </p>
+                </div>
+
+                <div style="margin-top: var(--spacing-lg);">
+                    <h4>Visualización 3D (Relación + Movimiento)</h4>
+                    <p style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 10px;">
+                        El eje Z representa la "distancia de rango" entre las variables, destacando discrepancias no lineales.
+                    </p>
+                    <div id="quickStatsPlot3D" style="height: 600px;"></div>
                 </div>
             </div>
+        `;
 
-            <div style="margin-top: var(--spacing-lg);">
-                <h4>Gráfico de Dispersión</h4>
-                <div id="quickStatsPlot"></div>
+        // Render 3D Plot
+        if (result.plot_3d) {
+            const layout3d = {
+                title: 'Análisis de Relación 3D',
+                autosize: true,
+                scene: {
+                    xaxis: { title: result.variable_x },
+                    yaxis: { title: result.variable_y },
+                    zaxis: { title: 'Divergencia (Rank Diff)' },
+                    camera: {
+                        eye: { x: 1.5, y: 1.5, z: 1.5 }
+                    }
+                },
+                margin: { l: 0, r: 0, b: 0, t: 30 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#f8fafc' }
+            };
+
+            Plotly.newPlot('quickStatsPlot3D', [result.plot_3d], layout3d, { responsive: true, displayModeBar: true });
+        }
+
+    } else {
+        // Standard Single Analysis Render (Legacy + supported)
+        const corr = result.correlation;
+        const methodLabel = result.correlation_method || 'Correlación de Pearson (r)';
+        let strengthClass = 'weak';
+        if (Math.abs(corr.coefficient) >= 0.7) strengthClass = 'strong';
+        else if (Math.abs(corr.coefficient) >= 0.4) strengthClass = 'moderate';
+
+        container.innerHTML = `
+            <div class="stats-section">
+                <h3 class="stats-section-title">
+                    🔗 Relación: ${result.variable_y} vs ${result.variable_x}
+                    <span class="correlation-badge ${strengthClass}">
+                        ${methodLabel.split(' ')[0]} = ${corr.coefficient}
+                    </span>
+                </h3>
+
+                <div class="interpretation-box" style="margin-bottom: var(--spacing-lg);">
+                    ${result.interpretation}
+                </div>
+
+                <div class="stats-results-grid">
+                    <div class="stats-card">
+                        <div class="stats-card-title">${methodLabel}</div>
+                        <div class="stats-card-value">${corr.coefficient}</div>
+                        <div class="stats-card-subtitle">
+                            ${corr.is_significant ? '✅ Significativa' : '❌ No significativa'} (p=${corr.p_value})
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-card-title">R² (Coef. Determinación)</div>
+                        <div class="stats-card-value">${corr.r_squared}</div>
+                        <div class="stats-card-subtitle">
+                            ${(corr.r_squared * 100).toFixed(1)}% de varianza explicada
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-card-title">Observaciones</div>
+                        <div class="stats-card-value">${result.n_observations.toLocaleString()}</div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: var(--spacing-md); margin-top: var(--spacing-lg);">
+                    <h4>📐 Ecuación de Regresión Lineal</h4>
+                    <p style="font-size: 1.25rem; font-family: monospace; margin-top: var(--spacing-sm); color: var(--primary);">
+                        ${result.regression.equation}
+                    </p>
+                    <div style="margin-top: var(--spacing-md); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-sm);">
+                        <div>
+                            <span style="color: var(--text-muted);">Pendiente:</span>
+                            <strong>${result.regression.slope}</strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Intercepto:</span>
+                            <strong>${result.regression.intercept}</strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Error Estándar:</span>
+                            <strong>${result.regression.std_error}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: var(--spacing-lg);">
+                    <h4>Gráfico de Dispersión</h4>
+                    <div id="quickStatsPlot"></div>
+                </div>
+                
+                 <!-- Optional 3D Plot for Single Analysis if returned -->
+                 ${result.plot_3d ? `
+                 <div style="margin-top: var(--spacing-lg);">
+                    <h4>Visualización 3D (Relación + Movimiento)</h4>
+                     <div id="quickStatsPlot3D" style="height: 500px;"></div>
+                 </div>` : ''}
             </div>
-        </div>
-    `;
+        `;
 
-    // Render plot
-    if (result.plot) {
-        const plotData = JSON.parse(result.plot);
-        Plotly.newPlot('quickStatsPlot', plotData.data, plotData.layout, { responsive: true, displayModeBar: false });
+        // Render 2D plot
+        if (result.plot) {
+            const plotData = JSON.parse(result.plot);
+            Plotly.newPlot('quickStatsPlot', plotData.data, plotData.layout, { responsive: true, displayModeBar: false });
+        }
+
+        // Render 3D plot if available
+        if (result.plot_3d) {
+            const layout3d = {
+                title: 'Relación 3D',
+                autosize: true,
+                scene: {
+                    xaxis: { title: result.variable_x },
+                    yaxis: { title: result.variable_y },
+                    zaxis: { title: 'Divergencia' },
+                },
+                margin: { l: 0, r: 0, b: 0, t: 30 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#f8fafc' }
+            };
+            Plotly.newPlot('quickStatsPlot3D', [result.plot_3d], layout3d, { responsive: true, displayModeBar: true });
+        }
     }
 }
 
