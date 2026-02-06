@@ -1353,3 +1353,53 @@ body {
     gap: var(--spacing-sm);
 } 
  
+/* ======================================
+   Quick Stats Styling
+   ====================================== */
+.stats-tabs {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    background: var(--glass-bg);
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    width: fit-content;
+    margin: 0 auto 2rem auto;
+}
+
+.stats-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.stats-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stats-tab.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.stats-tab .material-icons {
+    font-size: 1.2rem;
+}
+
+.stats-panel {
+    animation: fadeIn 0.3s ease;
+}
+
