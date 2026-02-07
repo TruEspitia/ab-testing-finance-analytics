@@ -808,13 +808,15 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="mcDrift">Drift (opcional)</label>
-                                    <input type="number" id="mcDrift" class="text-input" step="0.0001" placeholder="Auto">
+                                    <input type="number" id="mcDrift" class="text-input" step="0.0001"
+                                        placeholder="Auto">
                                     <small>Tendencia (se auto-calcula si está vacío)</small>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="mcVolatility">Volatilidad (opcional)</label>
-                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001" placeholder="Auto">
+                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001"
+                                        placeholder="Auto">
                                     <small>Desviación estándar (se auto-calcula si está vacío)</small>
                                 </div>
                             </div>
@@ -847,66 +849,249 @@
                 <!-- Risk Calculator View -->
                 <div id="view-risk-calculator" class="analysis-view hidden">
                     <!-- VaR Calculator Section -->
+                    <!-- Risk Calculator Section with Sub-Menu -->
                     <section class="glass-card risk-calc-section" id="riskSection">
                         <h2 class="section-title">
-                            <span class="icon">📊</span>
-                            VaR Calculator
+                            <span class="icon">🛡️</span>
+                            Risk Calculator
                         </h2>
 
-                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
-                            Calcula el Valor en Riesgo (VaR) y Conditional VaR (CVaR) usando diferentes métodos.
-                        </p>
-
-                        <form id="riskForm" class="analysis-form">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="riskDataset">Dataset</label>
-                                    <select id="riskDataset" class="select-input" required>
-                                        <option value="">Selecciona un dataset...</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="riskVariable">Variable (Retornos/Precios)</label>
-                                    <select id="riskVariable" class="select-input" required>
-                                        <option value="">Selecciona variable...</option>
-                                    </select>
-                                    <small>Se calcularán retornos logarítmicos si son precios</small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="riskMethod">Método</label>
-                                    <select id="riskMethod" class="select-input" required>
-                                        <option value="parametric">Paramétrico (Normal)</option>
-                                        <option value="historical">Histórico</option>
-                                        <option value="monte_carlo">Monte Carlo</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="riskConfidence">Nivel de Confianza</label>
-                                    <select id="riskConfidence" class="select-input" required>
-                                        <option value="0.90">90%</option>
-                                        <option value="0.95" selected>95%</option>
-                                        <option value="0.99">99%</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="riskHorizon">Horizonte Temporal (Días)</label>
-                                    <input type="number" id="riskHorizon" class="text-input" value="1" min="1" max="365"
-                                        required>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-large">
-                                <span>🛡️</span> Calcular Riesgo
+                        <!-- Sub-Menu Navigation -->
+                        <div class="risk-submenu">
+                            <button class="submenu-btn active" data-service="var-cvar">
+                                <span class="material-icons">shield</span>
+                                VaR / CVaR
                             </button>
-                        </form>
+                            <button class="submenu-btn" data-service="backtesting">
+                                <span class="material-icons">verified</span>
+                                Backtesting
+                            </button>
+                            <button class="submenu-btn" data-service="drawdown">
+                                <span class="material-icons">trending_down</span>
+                                Max Drawdown
+                            </button>
+                            <button class="submenu-btn" data-service="var-mc">
+                                <span class="material-icons">casino</span>
+                                VaR Monte Carlo
+                            </button>
+                        </div>
+
+                        <!-- Service: VaR/CVaR (Original) -->
+                        <div id="risk-service-var-cvar" class="risk-service-view active">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Calcula el Valor en Riesgo (VaR) y Conditional VaR (CVaR) usando diferentes métodos.
+                            </p>
+
+                            <form id="riskForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskDataset">Dataset</label>
+                                        <select id="riskDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskVariable">Variable (Retornos/Precios)</label>
+                                        <select id="riskVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                        <small>Se calcularán retornos logarítmicos si son precios</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="riskMethod">Método</label>
+                                        <select id="riskMethod" class="select-input" required>
+                                            <option value="parametric">Paramétrico (Normal)</option>
+                                            <option value="historical">Histórico</option>
+                                            <option value="monte_carlo">Monte Carlo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskConfidence">Nivel de Confianza</label>
+                                        <select id="riskConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="riskHorizon">Horizonte Temporal (Días)</label>
+                                        <input type="number" id="riskHorizon" class="text-input" value="1" min="1"
+                                            max="365" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span>🛡️</span> Calcular Riesgo
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: Backtesting -->
+                        <div id="risk-service-backtesting" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Valida un modelo VaR mediante backtesting con rolling window y test de Kupiec.
+                            </p>
+
+                            <form id="backtestingForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingDataset">Dataset</label>
+                                        <select id="backtestingDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingVariable">Variable (Retornos/Precios)</label>
+                                        <select id="backtestingVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="backtestingMethod">Método VaR</label>
+                                        <select id="backtestingMethod" class="select-input" required>
+                                            <option value="parametric" selected>Paramétrico</option>
+                                            <option value="historical">Histórico</option>
+                                            <option value="monte_carlo">Monte Carlo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingConfidence">Nivel de Confianza</label>
+                                        <select id="backtestingConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="backtestingWindow">Window Size (Días)</label>
+                                        <input type="number" id="backtestingWindow" class="text-input" value="250"
+                                            min="50" max="1000" required>
+                                        <small>Mínimo 50 observaciones para estimación</small>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">verified</span> Ejecutar Backtesting
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: Maximum Drawdown -->
+                        <div id="risk-service-drawdown" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Calcula la pérdida máxima desde el pico histórico y analiza periodos de recuperación.
+                            </p>
+
+                            <form id="drawdownForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="drawdownDataset">Dataset</label>
+                                        <select id="drawdownDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="drawdownVariable">Variable (Precios)</label>
+                                        <select id="drawdownVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                        <small>Debe ser una serie de precios (no retornos)</small>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">trending_down</span> Calcular Drawdown
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: VaR Monte Carlo Advanced -->
+                        <div id="risk-service-var-mc" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                VaR Monte Carlo con simulación de trayectorias completas y múltiples distribuciones.
+                            </p>
+
+                            <form id="varMcForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcDataset">Dataset</label>
+                                        <select id="varMcDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcVariable">Variable (Retornos/Precios)</label>
+                                        <select id="varMcVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="varMcDistribution">Distribución</label>
+                                        <select id="varMcDistribution" class="select-input" required>
+                                            <option value="normal" selected>Normal</option>
+                                            <option value="t-student">t-Student (Colas Pesadas)</option>
+                                            <option value="bootstrap">Bootstrap Histórico</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcConfidence">Nivel de Confianza</label>
+                                        <select id="varMcConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="varMcHorizon">Horizonte (Días)</label>
+                                        <input type="number" id="varMcHorizon" class="text-input" value="10" min="1"
+                                            max="365" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcIterations">Iteraciones</label>
+                                        <select id="varMcIterations" class="select-input" required>
+                                            <option value="1000">1,000</option>
+                                            <option value="5000">5,000</option>
+                                            <option value="10000" selected>10,000</option>
+                                            <option value="50000">50,000</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">casino</span> Simular Monte Carlo
+                                </button>
+                            </form>
+                        </div>
                     </section>
 
                     <!-- Risk Results Section -->
