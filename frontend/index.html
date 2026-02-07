@@ -640,6 +640,10 @@
                                 <span class="material-icons">scatter_plot</span>
                                 Dos Variables
                             </button>
+                            <button class="stats-tab" data-tab="timeseries">
+                                <span class="material-icons">timeline</span>
+                                Serie Temporal
+                            </button>
                         </div>
 
                         <!-- Single Variable Analysis -->
@@ -689,6 +693,45 @@
                                 style="margin-top: var(--spacing-md);">
                                 <span class="material-icons">analytics</span>
                                 Analizar Relación
+                            </button>
+                        </div>
+
+                        <!-- Time Series Analysis -->
+                        <div id="timeSeriesPanel" class="stats-panel hidden">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Columna de Tiempo</label>
+                                    <select id="qsTimeColumn" class="select-input">
+                                        <option value="">Selecciona columna temporal...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Columna de Valores</label>
+                                    <select id="qsValueColumn" class="select-input">
+                                        <option value="">Selecciona valores a analizar...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Períodos a Pronosticar</label>
+                                    <input type="number" id="forecastPeriods" class="text-input" value="10" min="1"
+                                        max="365">
+                                </div>
+                                <div class="form-group" style="display: flex; align-items: center; padding-top: 30px;">
+                                    <label style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="autoSelectParams" checked
+                                            style="width: 20px; height: 20px;">
+                                        Selección automática de parámetros ARIMA
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button id="analyzeTimeSeriesBtn" class="btn btn-primary btn-large"
+                                style="margin-top: var(--spacing-md);">
+                                <span class="material-icons">timeline</span>
+                                Analizar Serie Temporal
                             </button>
                         </div>
                     </section>

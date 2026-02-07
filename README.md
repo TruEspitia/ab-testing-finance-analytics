@@ -22,7 +22,7 @@ Este proyecto demuestra cómo diseñar y evaluar pruebas A/B para campañas de m
 - **Simulación Monte Carlo**: Proyecciones financieras usando Movimiento Browniano Geométrico (GBM).
 - **Clustering**: Segmentación de datos usando K-Means y DBSCAN.
 - **Regresión**: Ajuste de curvas y funciones matemáticas complejas.
-- **Quick Stats**: Análisis rápido de una y dos variables.
+- **Quick Stats**: Análisis rápido de una y dos variables, y análisis de series temporales (ARIMA).
 
 🔧 **Backend API RESTful**
 - FastAPI con endpoints documentados

@@ -28,6 +28,21 @@ async function analyzeDualVariables(datasetId, variableX, variableY, correlation
     return await response.json();
 }
 
+async function analyzeTimeSeries(datasetId, timeColumn, valueColumn, periodsAhead, autoSelect) {
+    const response = await fetch(`${API_BASE_URL}/quick-stats/time-series`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            dataset_id: datasetId,
+            time_column: timeColumn,
+            value_column: valueColumn,
+            periods_ahead: periodsAhead,
+            auto_select_params: autoSelect
+        })
+    });
+    return await response.json();
+}
+
 /**
  * Initialize Quick Stats section
  */
@@ -48,6 +63,7 @@ function initQuickStats() {
             const tabType = tab.dataset.tab;
             document.getElementById('singleVarPanel').classList.toggle('hidden', tabType !== 'single');
             document.getElementById('dualVarPanel').classList.toggle('hidden', tabType !== 'dual');
+            document.getElementById('timeSeriesPanel').classList.toggle('hidden', tabType !== 'timeseries');
         });
     });
 
@@ -72,6 +88,14 @@ function initQuickStats() {
             singleVarSelect.innerHTML = '<option value="">Selecciona una variable...</option>' + columnOptions;
             variableXSelect.innerHTML = '<option value="">Selecciona variable X...</option>' + columnOptions;
             variableYSelect.innerHTML = '<option value="">Selecciona variable Y...</option>' + columnOptions;
+
+            // Time Series specific
+            const timeColSelect = document.getElementById('qsTimeColumn');
+            const valueColSelect = document.getElementById('qsValueColumn');
+            if (timeColSelect && valueColSelect) {
+                timeColSelect.innerHTML = '<option value="">Selecciona columna temporal...</option>' + columnOptions;
+                valueColSelect.innerHTML = '<option value="">Selecciona valores a analizar...</option>' + columnOptions;
+            }
         } catch (error) {
             showToast('Error al cargar columnas', 'error');
         }
@@ -137,6 +161,40 @@ function initQuickStats() {
         } catch (error) {
             showToast('Error de conexión', 'error');
             console.error('Dual variable analysis error:', error);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    // Time Series Analysis
+    document.getElementById('analyzeTimeSeriesBtn')?.addEventListener('click', async () => {
+        const datasetId = datasetSelect.value;
+        const timeColumn = document.getElementById('qsTimeColumn').value;
+        const valueColumn = document.getElementById('qsValueColumn').value;
+        const periodsAhead = parseInt(document.getElementById('forecastPeriods').value);
+        const autoSelect = document.getElementById('autoSelectParams').checked;
+
+        if (!datasetId || !timeColumn || !valueColumn) {
+            showToast('Por favor completa todos los campos', 'error');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const result = await analyzeTimeSeries(
+                datasetId, timeColumn, valueColumn, periodsAhead, autoSelect
+            );
+
+            if (result.success) {
+                renderTimeSeriesResults(result);
+                document.getElementById('quickStatsResultsSection').classList.remove('hidden');
+                showToast('Análisis ARIMA completado', 'success');
+            } else {
+                showToast(result.detail || 'Error en el análisis', 'error');
+            }
+        } catch (error) {
+            showToast('Error en el análisis', 'error');
+            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -549,13 +607,119 @@ function updateQuickStatsSection() {
 }
 
 
+function renderTimeSeriesResults(result) {
+    const container = document.getElementById('quickStatsResultsContent');
+
+    container.innerHTML = `
+        <div class="stats-section">
+            <h3 class="stats-section-title">📈 Análisis de Serie Temporal - ARIMA${result.model_params.order}</h3>
+            
+            <div class="interpretation-box" style="margin-bottom: 20px;">
+                <pre style="white-space: pre-wrap; font-family: inherit;">${result.interpretation}</pre>
+            </div>
+            
+            <div class="stats-results-grid">
+                <div class="stats-card">
+                    <div class="stats-card-title">RMSE</div>
+                    <div class="stats-card-value">${result.metrics.rmse.toFixed(4)}</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-title">MAE</div>
+                    <div class="stats-card-value">${result.metrics.mae.toFixed(4)}</div>
+                </div>
+                <div class="stats-card">
+                    <div class="stats-card-title">AIC</div>
+                    <div class="stats-card-value">${result.model_params.aic.toFixed(2)}</div>
+                </div>
+            </div>
+            
+            <div id="arimaPlot" style="margin-top: 20px; height: 500px;"></div>
+        </div>
+    `;
+
+    // Crear gráfico con Plotly
+    renderARIMAPlot(result);
+}
+
+function renderARIMAPlot(result) {
+    // Helper to get current theme color
+    const textColor = getComputedStyle(document.body).getPropertyValue('--text-primary').trim();
+
+    const historical = {
+        x: result.historical_data.dates,
+        y: result.historical_data.values,
+        name: 'Datos Históricos',
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#3b82f6' }
+    };
+
+    const fitted = {
+        x: result.historical_data.dates,
+        y: result.historical_data.fitted_values,
+        name: 'Valores Ajustados',
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#10b981', dash: 'dot' }
+    };
+
+    const forecast = {
+        x: result.forecast.dates,
+        y: result.forecast.values,
+        name: 'Pronóstico',
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#f59e0b' }
+    };
+
+    // Banda de confianza
+    const upperBound = {
+        x: result.forecast.dates,
+        y: result.forecast.upper_bound,
+        fill: 'tonexty',
+        fillcolor: 'rgba(245, 158, 11, 0.2)',
+        line: { color: 'transparent' },
+        showlegend: false,
+        type: 'scatter',
+        name: 'IC Superior'
+    };
+
+    const lowerBound = {
+        x: result.forecast.dates,
+        y: result.forecast.lower_bound,
+        fill: 'tonexty',
+        fillcolor: 'rgba(245, 158, 11, 0.2)',
+        line: { color: 'transparent' }, // Transparent line for lower bound to avoid double drawing
+        name: 'IC 95%',
+        type: 'scatter'
+    };
+
+    const layout = {
+        title: 'Serie Temporal con Pronóstico ARIMA',
+        xaxis: { title: 'Fecha', titlefont: { color: textColor }, tickfont: { color: textColor } },
+        yaxis: { title: 'Valor', titlefont: { color: textColor }, tickfont: { color: textColor } },
+        hovermode: 'x unified',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: textColor },
+        legend: { orientation: 'h', y: -0.2 }
+    };
+
+    Plotly.newPlot('arimaPlot',
+        [historical, fitted, lowerBound, upperBound, forecast],
+        layout,
+        { responsive: true }
+    );
+}
+
 // Export functions
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         initQuickStats,
         updateQuickStatsSection,
         analyzeSingleVariable,
-        analyzeDualVariables
+        analyzeDualVariables,
+        analyzeTimeSeries
     };
 }
 
