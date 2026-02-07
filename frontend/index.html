@@ -72,6 +72,12 @@
                                 <span>Monte Carlo</span>
                             </a>
                         </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="risk-calculator" id="nav-risk-calculator">
+                                <span class="material-icons">shield</span>
+                                <span>Risk Calculator</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="nav-group">
@@ -802,15 +808,13 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="mcDrift">Drift (opcional)</label>
-                                    <input type="number" id="mcDrift" class="text-input" step="0.0001"
-                                        placeholder="Auto">
+                                    <input type="number" id="mcDrift" class="text-input" step="0.0001" placeholder="Auto">
                                     <small>Tendencia (se auto-calcula si está vacío)</small>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="mcVolatility">Volatilidad (opcional)</label>
-                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001"
-                                        placeholder="Auto">
+                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001" placeholder="Auto">
                                     <small>Desviación estándar (se auto-calcula si está vacío)</small>
                                 </div>
                             </div>
@@ -839,8 +843,89 @@
                         </div>
                     </section>
                 </div>
+
+                <!-- Risk Calculator View -->
+                <div id="view-risk-calculator" class="analysis-view hidden">
+                    <!-- VaR Calculator Section -->
+                    <section class="glass-card risk-calc-section" id="riskSection">
+                        <h2 class="section-title">
+                            <span class="icon">📊</span>
+                            VaR Calculator
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Calcula el Valor en Riesgo (VaR) y Conditional VaR (CVaR) usando diferentes métodos.
+                        </p>
+
+                        <form id="riskForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="riskDataset">Dataset</label>
+                                    <select id="riskDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="riskVariable">Variable (Retornos/Precios)</label>
+                                    <select id="riskVariable" class="select-input" required>
+                                        <option value="">Selecciona variable...</option>
+                                    </select>
+                                    <small>Se calcularán retornos logarítmicos si son precios</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="riskMethod">Método</label>
+                                    <select id="riskMethod" class="select-input" required>
+                                        <option value="parametric">Paramétrico (Normal)</option>
+                                        <option value="historical">Histórico</option>
+                                        <option value="monte_carlo">Monte Carlo</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="riskConfidence">Nivel de Confianza</label>
+                                    <select id="riskConfidence" class="select-input" required>
+                                        <option value="0.90">90%</option>
+                                        <option value="0.95" selected>95%</option>
+                                        <option value="0.99">99%</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="riskHorizon">Horizonte Temporal (Días)</label>
+                                    <input type="number" id="riskHorizon" class="text-input" value="1" min="1" max="365"
+                                        required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🛡️</span> Calcular Riesgo
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Risk Results Section -->
+                    <section class="glass-card risk-results-section hidden" id="riskResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span class="icon">📉</span>
+                            Resultados de Riesgo
+                        </h2>
+                        <div id="riskResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+
             </div>
-        </main>
+    </div>
+    </main>
     </div>
 
     <!-- Toast Notifications -->
@@ -852,8 +937,9 @@
         <p>Procesando...</p>
     </div>
 
-    <script src="quick_stats.js"></script>
-    <script src="app.js"></script>
+    <!-- Módulos JavaScript (Nueva arquitectura modular) -->
+    <!-- Main Application Entry Point -->
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>

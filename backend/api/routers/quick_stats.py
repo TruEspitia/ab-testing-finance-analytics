@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import logging
 import traceback
-from ...dataset_manager import dataset_manager
+from backend.dataset_manager import dataset_manager
 
 # Configure logging
 logger = logging.getLogger(__name__)

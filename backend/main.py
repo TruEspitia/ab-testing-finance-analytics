@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
-from .api.routers import datasets, analysis, reports, clustering, quick_stats
+from .api.routers import datasets, analysis, reports, clustering, quick_stats, risk
 
 
 # Crear aplicación FastAPI
@@ -31,6 +31,7 @@ app.include_router(analysis.router)
 app.include_router(reports.router)
 app.include_router(clustering.router)
 app.include_router(quick_stats.router)
+app.include_router(risk.router)
 
 # Montar archivos estáticos del frontend
 frontend_path = Path(__file__).parent.parent / "frontend"
