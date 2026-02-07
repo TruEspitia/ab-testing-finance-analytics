@@ -106,6 +106,9 @@ function initQuickStats() {
         const datasetId = datasetSelect.value;
         const variable = singleVarSelect.value;
 
+        // Store current params for export
+        const currentParams = { dataset_id: datasetId, variable: variable };
+
         if (!datasetId || !variable) {
             showToast('Selecciona un dataset y una variable', 'error');
             return;
@@ -116,7 +119,7 @@ function initQuickStats() {
             const result = await analyzeSingleVariable(datasetId, variable);
 
             if (result.success) {
-                renderSingleVariableResults(result);
+                renderSingleVariableResults(result, currentParams);
                 document.getElementById('quickStatsResultsSection').classList.remove('hidden');
                 showToast('Análisis completado', 'success');
             } else {
@@ -137,6 +140,14 @@ function initQuickStats() {
         const variableY = variableYSelect.value;
         const correlationType = document.getElementById('correlationType').value;
 
+        // Store current params
+        const currentParams = {
+            dataset_id: datasetId,
+            variable_x: variableX,
+            variable_y: variableY,
+            correlation_type: correlationType
+        };
+
         if (!datasetId || !variableX || !variableY) {
             showToast('Selecciona un dataset y ambas variables', 'error');
             return;
@@ -152,7 +163,7 @@ function initQuickStats() {
             const result = await analyzeDualVariables(datasetId, variableX, variableY, correlationType);
 
             if (result.success) {
-                renderDualVariableResults(result);
+                renderDualVariableResults(result, currentParams);
                 document.getElementById('quickStatsResultsSection').classList.remove('hidden');
                 showToast('Análisis completado', 'success');
             } else {
@@ -174,6 +185,15 @@ function initQuickStats() {
         const periodsAhead = parseInt(document.getElementById('forecastPeriods').value);
         const autoSelect = document.getElementById('autoSelectParams').checked;
 
+        // Store params
+        const currentParams = {
+            dataset_id: datasetId,
+            time_column: timeColumn,
+            value_column: valueColumn,
+            periods_ahead: periodsAhead,
+            auto_select_params: autoSelect
+        };
+
         if (!datasetId || !timeColumn || !valueColumn) {
             showToast('Por favor completa todos los campos', 'error');
             return;
@@ -186,7 +206,7 @@ function initQuickStats() {
             );
 
             if (result.success) {
-                renderTimeSeriesResults(result);
+                renderTimeSeriesResults(result, currentParams);
                 document.getElementById('quickStatsResultsSection').classList.remove('hidden');
                 showToast('Análisis ARIMA completado', 'success');
             } else {
@@ -204,18 +224,29 @@ function initQuickStats() {
 /**
  * Render single variable results
  */
-function renderSingleVariableResults(result) {
+function renderSingleVariableResults(result, params) {
     const container = document.getElementById('quickStatsResultsContent');
 
+    // Create export button
+    const exportBtnId = `exportSingle_${Date.now()}`;
+    const headerHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="stats-section-title" style="margin-bottom: 0;">${result.type === 'categorical' ? '📊' : '📈'} ${result.variable}</h3>
+            <button id="${exportBtnId}" class="btn btn-secondary output-btn">
+                <span class="material-icons" style="font-size: 18px; margin-right: 5px;">download</span> 
+                Excel
+            </button>
+        </div>
+    `;
+
     if (result.type === 'categorical') {
-        // Categorical variable
         const topCategoriesHtml = Object.entries(result.top_categories)
             .map(([cat, count]) => `<li>${cat}: ${count}</li>`)
             .join('');
 
         container.innerHTML = `
             <div class="stats-section">
-                <h3 class="stats-section-title">📊 Variable Categórica: ${result.variable}</h3>
+                ${headerHtml}
                 
                 <div class="stats-results-grid">
                     <div class="stats-card">
@@ -249,7 +280,7 @@ function renderSingleVariableResults(result) {
         const stats = result.statistics;
         container.innerHTML = `
             <div class="stats-section">
-                <h3 class="stats-section-title">📈 Variable Numérica: ${result.variable}</h3>
+                ${headerHtml}
                 
                 <div class="stats-section">
                     <h4>Tendencia Central</h4>
@@ -372,22 +403,36 @@ function renderSingleVariableResults(result) {
 
         Plotly.newPlot('quickStatsPlot', plotData.data, plotData.layout, { responsive: true, displayModeBar: false });
     }
+    // Attach export event
+    document.getElementById(exportBtnId)?.addEventListener('click', () => {
+        exportQuickStats('single', params);
+    });
 }
 
 /**
  * Render dual variable results
  */
-function renderDualVariableResults(result) {
+function renderDualVariableResults(result, params) {
     const container = document.getElementById('quickStatsResultsContent');
+
+    // Create export button
+    const exportBtnId = `exportDual_${Date.now()}`;
+    const headerHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="stats-section-title" style="margin-bottom: 0;">🔮 ${result.variable_y} vs ${result.variable_x}</h3>
+             <button id="${exportBtnId}" class="btn btn-secondary output-btn">
+                <span class="material-icons" style="font-size: 18px; margin-right: 5px;">download</span> 
+                Excel
+            </button>
+        </div>
+    `;
 
     if (result.correlation_type === 'full') {
         const res = result.results;
 
         container.innerHTML = `
             <div class="stats-section">
-                <h3 class="stats-section-title">
-                    🔮 Análisis Completo: ${result.variable_y} vs ${result.variable_x}
-                </h3>
+                ${headerHtml}
                 
                 <div class="stats-results-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
                     <!-- Pearson -->
@@ -442,7 +487,7 @@ function renderDualVariableResults(result) {
                     <div id="quickStatsPlot3D" style="height: 600px;"></div>
                 </div>
             </div>
-        `;
+            `;
 
         // Render 3D Plot
         if (result.plot_3d) {
@@ -478,12 +523,7 @@ function renderDualVariableResults(result) {
 
         container.innerHTML = `
             <div class="stats-section">
-                <h3 class="stats-section-title">
-                    🔗 Relación: ${result.variable_y} vs ${result.variable_x}
-                    <span class="correlation-badge ${strengthClass}">
-                        ${methodLabel.split(' ')[0]} = ${corr.coefficient}
-                    </span>
-                </h3>
+                ${headerHtml}
 
                 <div class="interpretation-box" style="margin-bottom: var(--spacing-lg);">
                     ${result.interpretation}
@@ -584,6 +624,11 @@ function renderDualVariableResults(result) {
             Plotly.newPlot('quickStatsPlot3D', [result.plot_3d], layout3d, { responsive: true, displayModeBar: true });
         }
     }
+
+    // Attach export event
+    document.getElementById(exportBtnId)?.addEventListener('click', () => {
+        exportQuickStats('dual', params);
+    });
 }
 
 /**
@@ -607,15 +652,38 @@ function updateQuickStatsSection() {
 }
 
 
-function renderTimeSeriesResults(result) {
+function renderTimeSeriesResults(result, params) {
     const container = document.getElementById('quickStatsResultsContent');
+
+    // Format ARIMA model string
+    const order = result.model_params.order;
+    const modelStr = `ARIMA(${order[0]}, ${order[1]}, ${order[2]})`;
+
+    // Create export button
+    const exportBtnId = `exportTS_${Date.now()}`;
+    const headerHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 class="stats-section-title" style="margin-bottom: 0;">📈 Serie Temporal - ${modelStr}</h3>
+             <button id="${exportBtnId}" class="btn btn-secondary output-btn">
+                <span class="material-icons" style="font-size: 18px; margin-right: 5px;">download</span> 
+                Excel
+            </button>
+        </div>
+    `;
 
     container.innerHTML = `
         <div class="stats-section">
-            <h3 class="stats-section-title">📈 Análisis de Serie Temporal - ARIMA${result.model_params.order}</h3>
+            ${headerHtml}
             
             <div class="interpretation-box" style="margin-bottom: 20px;">
                 <pre style="white-space: pre-wrap; font-family: inherit;">${result.interpretation}</pre>
+            </div>
+            
+            <div class="glass-card" style="padding: var(--spacing-md); margin-bottom: 20px;">
+                <h4 style="margin-bottom: 10px;">Detalles del Modelo (Summary)</h4>
+                <div style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px;">
+                    <pre style="font-family: 'Consolas', monospace; font-size: 0.85rem; white-space: pre;">${result.model_summary || 'Detalles no disponibles'}</pre>
+                </div>
             </div>
             
             <div class="stats-results-grid">
@@ -639,6 +707,11 @@ function renderTimeSeriesResults(result) {
 
     // Crear gráfico con Plotly
     renderARIMAPlot(result);
+
+    // Attach export event
+    document.getElementById(exportBtnId)?.addEventListener('click', () => {
+        exportQuickStats('timeseries', params);
+    });
 }
 
 function renderARIMAPlot(result) {
@@ -712,6 +785,44 @@ function renderARIMAPlot(result) {
     );
 }
 
+/**
+ * Export Quick Stats Results to Excel
+ */
+async function exportQuickStats(analysisType, params) {
+    try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/quick-stats/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                analysis_type: analysisType,
+                params: params
+            })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quick_stats_${analysisType}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showToast('Archivo descargado con éxito', 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Error al descargar archivo', 'error');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Error de conexión al exportar', 'error');
+    } finally {
+        setLoading(false);
+    }
+}
+
 // Export functions
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -719,7 +830,8 @@ if (typeof module !== 'undefined' && module.exports) {
         updateQuickStatsSection,
         analyzeSingleVariable,
         analyzeDualVariables,
-        analyzeTimeSeries
+        analyzeTimeSeries,
+        exportQuickStats
     };
 }
 

@@ -133,5 +133,6 @@ class TimeSeriesAnalyzer:
             'metrics': {
                 'rmse': float(np.sqrt(fitted_model.mse)),
                 'mae': float(fitted_model.mae)
-            }
+            },
+            'model_summary': fitted_model.summary().as_text()
         }

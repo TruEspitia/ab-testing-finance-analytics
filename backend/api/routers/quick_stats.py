@@ -33,12 +33,22 @@ class DualVariableRequest(BaseModel):
     correlation_type: Optional[str] = "pearson" # "pearson", "spearman", "kendall", "full"
 
 
+from fastapi.responses import StreamingResponse
+import io
+import json
+
 class TimeSeriesRequest(BaseModel):
     dataset_id: str
     time_column: str
     value_column: str
     periods_ahead: int = Field(default=10, ge=1, le=365)
     auto_select_params: bool = True
+
+
+class QuickStatsExportRequest(BaseModel):
+    analysis_type: str  # "single", "dual", "timeseries"
+    params: dict
+
 
 
 @router.post("/single")
@@ -467,4 +477,284 @@ Modelo ARIMA{order} ajustado exitosamente.
 El modelo proyecta {len(result['forecast']['values'])} períodos hacia adelante con intervalos de confianza del 95%.
 """
     return interpretation.strip()
+
+
+@router.post("/export")
+async def export_quick_stats(request: QuickStatsExportRequest):
+    """
+    Exporta los resultados del análisis a Excel con reporte detallado y gráficos
+    """
+    try:
+        # 1. Obtener resultados según el tipo de análisis
+        results = None
+        df_source = None # To hold raw data for "Data" sheet
+        
+        # Necesitamos el dataframe original para la pestaña de Datos
+        # Asi que accederemos a el antes de llamar a las funciones de analisis
+        
+        if request.analysis_type == "single":
+            req = SingleVariableRequest(**request.params)
+            df_source = dataset_manager.get_dataset(req.dataset_id)
+            if df_source is not None and req.variable in df_source.columns:
+                 df_source = df_source[[req.variable]].dropna()
+            results = await analyze_single_variable(req)
+            
+        elif request.analysis_type == "dual":
+            req = DualVariableRequest(**request.params)
+            df_source = dataset_manager.get_dataset(req.dataset_id)
+            if df_source is not None and req.variable_x in df_source.columns and req.variable_y in df_source.columns:
+                df_source = df_source[[req.variable_x, req.variable_y]].dropna()
+            results = await analyze_dual_variables(req)
+            
+        elif request.analysis_type == "timeseries":
+            req = TimeSeriesRequest(**request.params)
+            df_source = dataset_manager.get_dataset(req.dataset_id)
+            if df_source is not None and req.time_column in df_source.columns and req.value_column in df_source.columns:
+                 df_source = df_source[[req.time_column, req.value_column]].dropna()
+            results = await analyze_time_series(req)
+            
+        if not results:
+            raise HTTPException(status_code=400, detail="Tipo de análisis no válido")
+
+        # 2. Generar Excel
+        output = io.BytesIO()
+        
+        # Use existing matplotlib backend from other services to avoid GUI errors
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            workbook = writer.book
+            
+            # Formatos
+            header_fmt = workbook.add_format({'bold': True, 'bg_color': '#4F81BD', 'font_color': 'white', 'border': 1})
+            cell_fmt = workbook.add_format({'border': 1})
+            title_fmt = workbook.add_format({'bold': True, 'font_size': 14, 'font_color': '#1F497D'})
+            
+            # --- Sheet 1: Reporte Summary ---
+            worksheet_report = workbook.add_worksheet('Reporte')
+            worksheet_report.write('A1', f'Reporte de Análisis: {request.analysis_type.capitalize()}', title_fmt)
+            worksheet_report.write('A2', f'Fecha: {pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")}')
+            
+            img_buffer = None
+            
+            if request.analysis_type == "single":
+                # --- Single Variable Logic ---
+                var_name = results['variable']
+                
+                # Table 1: Key Metrics
+                worksheet_report.write('A4', 'Estadísticas Clave', header_fmt)
+                worksheet_report.write('B4', 'Valor', header_fmt)
+                
+                row = 4
+                metrics = []
+                if results['type'] == 'numeric':
+                    stats = results['statistics']
+                    metrics = [
+                        ('Observaciones', results['n_observations']),
+                        ('Media', stats['central_tendency']['mean']),
+                        ('Mediana', stats['central_tendency']['median']),
+                        ('Desv. Std', stats['dispersion']['std']),
+                        ('Min', stats['range']['min']),
+                        ('Max', stats['range']['max']),
+                        ('Asimetría', stats['shape']['skewness']),
+                        ('Curtosis', stats['shape']['kurtosis'])
+                    ]
+                else: 
+                     metrics = [
+                        ('Observaciones', results['n_observations']),
+                        ('Categorías Únicas', results['n_unique']),
+                        ('Moda', results['mode'])
+                    ]
+
+                for name, value in metrics:
+                    worksheet_report.write(row, 0, name, cell_fmt)
+                    worksheet_report.write(row, 1, value, cell_fmt)
+                    row += 1
+                
+                # Generate Plot
+                plt.figure(figsize=(10, 6))
+                if results['type'] == 'numeric':
+                    sns.histplot(df_source[var_name], kde=True, color='skyblue')
+                    plt.title(f'Distribución de {var_name}')
+                    plt.xlabel(var_name)
+                    plt.ylabel('Frecuencia')
+                else:
+                    top_cats = df_source[var_name].value_counts().head(10)
+                    sns.barplot(x=top_cats.index, y=top_cats.values, palette='viridis')
+                    plt.title(f'Top 10 Categorías de {var_name}')
+                    plt.xlabel(var_name)
+                    plt.ylabel('Conteo')
+                    plt.xticks(rotation=45)
+                
+                plt.tight_layout()
+                img_buffer = io.BytesIO()
+                plt.savefig(img_buffer, format='png', dpi=100)
+                plt.close()
+                
+            elif request.analysis_type == "dual":
+                # --- Dual Variable Logic ---
+                x_name = results['variable_x']
+                y_name = results['variable_y']
+                
+                # Table 1: Key Metrics
+                worksheet_report.write('A4', 'Métricas de Relación', header_fmt)
+                worksheet_report.write('B4', 'Valor', header_fmt)
+                
+                row = 4
+                metrics = []
+                if 'correlation' in results:
+                     metrics = [
+                        ('Correlación', results['correlation']['coefficient']),
+                        ('P-Value', results['correlation']['p_value']),
+                        ('R-Cuadrado', results['correlation']['r_squared']),
+                        ('Significancia', 'Sí' if results['correlation']['is_significant'] else 'No')
+                    ]
+                if 'regression' in results:
+                     metrics.extend([
+                         ('Pendiente', results['regression']['slope']),
+                         ('Intercepto', results['regression']['intercept']),
+                         ('Ecuación', results['regression']['equation'])
+                     ])
+
+                for name, value in metrics:
+                    worksheet_report.write(row, 0, name, cell_fmt)
+                    worksheet_report.write(row, 1, value, cell_fmt)
+                    row += 1
+                
+                # Generate Plot
+                plt.figure(figsize=(10, 6))
+                sns.scatterplot(x=df_source[x_name], y=df_source[y_name], alpha=0.6)
+                
+                # Reg line
+                if 'regression' in results:
+                    slope = results['regression']['slope']
+                    intercept = results['regression']['intercept']
+                    x_vals = np.array([df_source[x_name].min(), df_source[x_name].max()])
+                    y_vals = slope * x_vals + intercept
+                    plt.plot(x_vals, y_vals, color='red', linestyle='--', label='Tendencia')
+                    plt.legend()
+                    
+                plt.title(f'Relación: {y_name} vs {x_name}')
+                plt.xlabel(x_name)
+                plt.ylabel(y_name)
+                plt.grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                img_buffer = io.BytesIO()
+                plt.savefig(img_buffer, format='png', dpi=100)
+                plt.close()
+
+            elif request.analysis_type == "timeseries":
+                # --- Time Series Logic ---
+                # Table 1: Model Metrics
+                worksheet_report.write('A4', 'Métricas del Modelo ARIMA', header_fmt)
+                worksheet_report.write('B4', 'Valor', header_fmt)
+                
+                row = 4
+                metrics = [
+                    ('Orden (p,d,q)', str(results['model_params']['order'])),
+                    ('AIC', results['model_params']['aic']),
+                    ('RMSE', results['metrics']['rmse']),
+                    ('MAE', results['metrics']['mae']),
+                    ('Estacionariedad', 'Sí' if results['stationarity']['is_stationary'] else 'No')
+                ]
+                
+                for name, value in metrics:
+                    worksheet_report.write(row, 0, name, cell_fmt)
+                    worksheet_report.write(row, 1, value, cell_fmt)
+                    row += 1
+                    
+                # Full Summary
+                worksheet_report.write('D4', 'Resumen del Modelo', header_fmt)
+                # Split summary by newlines and write
+                summary_lines = results.get('model_summary', '').split('\n')
+                summ_row = 5
+                for line in summary_lines:
+                    worksheet_report.write(summ_row, 3, line)
+                    summ_row += 1
+                
+                # Generate Plot
+                plt.figure(figsize=(12, 6))
+                
+                # Historical
+                hist_dates = [pd.to_datetime(d) for d in results['historical_data']['dates']]
+                plt.plot(hist_dates, results['historical_data']['values'], label='Histórico', color='blue')
+                plt.plot(hist_dates, results['historical_data']['fitted_values'], label='Ajuste', color='green', linestyle='--')
+                
+                # Forecast
+                forecast_dates = [pd.to_datetime(d) for d in results['forecast']['dates']]
+                plt.plot(forecast_dates, results['forecast']['values'], label='Pronóstico', color='orange')
+                plt.fill_between(forecast_dates, results['forecast']['lower_bound'], results['forecast']['upper_bound'], color='orange', alpha=0.2, label='IC 95%')
+                
+                plt.title('Análisis y Pronóstico ARIMA')
+                plt.legend()
+                plt.grid(True, alpha=0.3)
+                
+                plt.tight_layout()
+                img_buffer = io.BytesIO()
+                plt.savefig(img_buffer, format='png', dpi=100)
+                plt.close()
+
+            # Insert Image if generated summary_lines
+            if img_buffer:
+                worksheet_report.insert_image('A15', 'chart.png', {'image_data': img_buffer})
+
+            # --- Sheet 2: Data (Raw Data) ---
+            if df_source is not None:
+                df_source.to_excel(writer, sheet_name='Datos Crudos', index=False)
+            
+            # --- Sheet 3: Detailed Stats (Original structured tables) ---
+            # Reuse logic from original export but put in separate sheet or appending
+            # For simplicity, let's dump the JSON structure as flattened key-value if simple
+            # Or just specific detailed tables
+            
+            if request.analysis_type == "single" and results['type'] == 'numeric':
+                 stats = results['statistics']
+                 detailed_data = []
+                 for cat, submetrics in stats.items():
+                     if isinstance(submetrics, dict):
+                         for k, v in submetrics.items():
+                             detailed_data.append({'Categoría': cat, 'Métrica': k, 'Valor': v})
+                 pd.DataFrame(detailed_data).to_excel(writer, sheet_name='Detalles Estadísticos', index=False)
+                 
+            elif request.analysis_type == "dual" and results['correlation_type'] == 'full':
+                res_full = results['results']
+                rows = []
+                for method, data in res_full.items():
+                    rows.append({
+                        'Método': data['name'],
+                        'Coeficiente': data['coefficient'],
+                        'P-Value': data['p_value'],
+                        'Significativo': data['is_significant'],
+                        'Interpretación': data['interpretation']
+                    })
+                pd.DataFrame(rows).to_excel(writer, sheet_name='Detalles Correlación', index=False)
+            
+            elif request.analysis_type == "timeseries":
+                # Forecast Data Table
+                forecast_df = pd.DataFrame({
+                    "Fecha": results['forecast']['dates'],
+                    "Pronóstico": results['forecast']['values'],
+                    "Límite Inferior": results['forecast']['lower_bound'],
+                    "Límite Superior": results['forecast']['upper_bound']
+                })
+                forecast_df.to_excel(writer, sheet_name='Datos Pronóstico', index=False)
+
+        output.seek(0)
+        headers = {
+            'Content-Disposition': f'attachment; filename="quick_stats_report_{request.analysis_type}.xlsx"'
+        }
+        return StreamingResponse(
+            output, 
+            headers=headers, 
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        logger.error(f"Error exportando Excel: {str(e)}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
