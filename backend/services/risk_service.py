@@ -154,7 +154,7 @@ class RiskService:
         buf.seek(0)
         return base64.b64encode(buf.read()).decode('utf-8')
 
-    def calculate_maximum_drawdown(self, prices: pd.Series):
+    def calculate_maximum_drawdown(self, data: pd.Series):
         """
         Calcula el Maximum Drawdown (MDD) y drawdown series.
         
@@ -165,14 +165,14 @@ class RiskService:
             dict: MDD, peak, trough, recovery info, y serie de drawdown.
         """
         try:
-            if prices.empty:
+            if data.empty:
                 raise ValueError("Serie de precios vacía")
             
             # Calcular running maximum (peak)
-            running_max = prices.expanding().max()
+            running_max = data.expanding().max()
             
             # Calcular drawdown en cada punto
-            drawdown = (prices - running_max) / running_max
+            drawdown = (data - running_max) / running_max
             
             # Maximum Drawdown
             max_dd = drawdown.min()
@@ -180,21 +180,21 @@ class RiskService:
             
             # Encontrar el peak anterior al MDD
             peak_idx = running_max[:max_dd_idx].idxmax()
-            peak_value = prices[peak_idx]
-            trough_value = prices[max_dd_idx]
+            peak_value = data[peak_idx]
+            trough_value = data[max_dd_idx]
             
             # Calcular recovery (si existe)
             recovery_idx = None
             recovery_days = None
-            if max_dd_idx < len(prices) - 1:
-                future_prices = prices[max_dd_idx:]
+            if max_dd_idx < len(data) - 1:
+                future_prices = data[max_dd_idx:]
                 recovered = future_prices[future_prices >= peak_value]
                 if not recovered.empty:
                     recovery_idx = recovered.index[0]
-                    recovery_days = (recovery_idx - max_dd_idx) if hasattr(max_dd_idx, '__sub__') else len(prices[max_dd_idx:recovery_idx])
+                    recovery_days = (recovery_idx - max_dd_idx) if hasattr(max_dd_idx, '__sub__') else len(data[max_dd_idx:recovery_idx])
             
             # Generar gráfico
-            plot_base64 = self._generate_drawdown_plot(prices, drawdown, peak_idx, max_dd_idx, recovery_idx)
+            plot_base64 = self._generate_drawdown_plot(data, drawdown, peak_idx, max_dd_idx, recovery_idx)
             
             return {
                 "max_drawdown": float(max_dd * 100),  # Convertir a porcentaje
@@ -205,7 +205,7 @@ class RiskService:
                 "recovery_date": str(recovery_idx) if recovery_idx else None,
                 "recovery_days": int(recovery_days) if recovery_days else None,
                 "drawdown_series": drawdown.tolist(),
-                "dates": prices.index.astype(str).tolist() if hasattr(prices.index, 'astype') else list(range(len(prices))),
+                "dates": data.index.astype(str).tolist() if hasattr(data.index, 'astype') else list(range(len(data))),
                 "plot": plot_base64
             }
             

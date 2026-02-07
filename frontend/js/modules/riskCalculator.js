@@ -7,6 +7,7 @@ import { showToast } from '../ui/notifications.js';
 import { setLoading } from '../core/utils.js';
 import { fetchDatasetColumns, runRiskAnalysis } from '../api/client.js';
 import { API_BASE_URL } from '../core/config.js';
+import { handleExportExcel } from './exportManager.js';
 
 /**
  * Initialize sub-menu navigation for Risk Calculator
@@ -88,6 +89,9 @@ function initVarCvarForm() {
             });
 
             if (result.success) {
+                // Store results in global state for export
+                appState.lastRiskResults = result.results;
+                console.log('Risk results stored in appState:', appState.lastRiskResults);
                 renderVarCvarResults(result.results);
                 showToast('Cálculo de Riesgo completado', 'success');
             } else {
@@ -132,7 +136,7 @@ function initBacktestingForm() {
 
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/risk/backtesting`, {
+            const response = await fetch(`${API_BASE_URL}/risk/backtesting`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -148,6 +152,8 @@ function initBacktestingForm() {
             const result = await response.json();
 
             if (result.success) {
+                // Store results in global state for export
+                appState.lastRiskResults = result.results;
                 renderBacktestingResults(result.results);
                 showToast('Backtesting completado', 'success');
             } else {
@@ -189,7 +195,7 @@ function initDrawdownForm() {
 
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/risk/maximum-drawdown`, {
+            const response = await fetch(`${API_BASE_URL}/risk/maximum-drawdown`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -201,6 +207,8 @@ function initDrawdownForm() {
             const result = await response.json();
 
             if (result.success) {
+                // Store results in global state for export
+                appState.lastRiskResults = result.results;
                 renderDrawdownResults(result.results);
                 showToast('Maximum Drawdown calculado', 'success');
             } else {
@@ -246,7 +254,7 @@ function initVarMcForm() {
 
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/risk/var-montecarlo`, {
+            const response = await fetch(`${API_BASE_URL}/risk/var-montecarlo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -262,6 +270,8 @@ function initVarMcForm() {
             const result = await response.json();
 
             if (result.success) {
+                // Store results in global state for export
+                appState.lastRiskResults = result.results;
                 renderVarMcResults(result.results);
                 showToast('VaR Monte Carlo completado', 'success');
             } else {
@@ -311,9 +321,9 @@ async function loadVariablesForRisk(datasetId, selectId) {
                     'number', 'int', 'float', 'double', 'decimal', 'numeric',
                     'integer', 'real', 'bigint', 'smallint'
                 ];
-                
-                return numericTypes.some(type => colType.includes(type)) || 
-                       colType.match(/^(int|float|double|decimal|numeric|real)\d*$/);
+
+                return numericTypes.some(type => colType.includes(type)) ||
+                    colType.match(/^(int|float|double|decimal|numeric|real)\d*$/);
             });
 
             console.log('Numeric columns found:', numericCols);
@@ -390,12 +400,25 @@ export function renderVarCvarResults(results) {
         </div>
         
         <div class="plot-container glass-card" style="margin-top: var(--spacing-lg); padding: var(--spacing-md); border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-            <h3 style="margin-bottom: var(--spacing-md);">Distribución de Pérdidas y Ganancias - ${methodTitle}</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h3 style="margin: 0;">Distribución de Pérdidas y Ganancias - ${methodTitle}</h3>
+                <button class="btn btn-secondary export-risk-btn" style="display: flex; align-items: center; gap: 8px;">
+                    <span>📊</span> Exportar a Excel
+                </button>
+            </div>
             ${results.plot ? `<img src="data:image/png;base64,${results.plot}" style="width: 100%; border-radius: var(--radius-md);" alt="Risk Plot" />` : '<p>No se pudo generar el gráfico</p>'}
         </div>
     `;
 
     container.scrollIntoView({ behavior: 'smooth' });
+
+    // Add export button event listener
+    const exportBtns = content.querySelectorAll('.export-risk-btn');
+    exportBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleExportExcel('risk');
+        });
+    });
 }
 
 /**
@@ -430,12 +453,25 @@ function renderBacktestingResults(results) {
         </div>
         
         <div class="plot-container glass-card" style="margin-top: var(--spacing-lg); padding: var(--spacing-md); border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-            <h3 style="margin-bottom: var(--spacing-md);">Backtesting: Violaciones vs VaR Predicho</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h3 style="margin: 0;">Backtesting: Violaciones vs VaR Predicho</h3>
+                <button class="btn btn-secondary export-risk-btn" style="display: flex; align-items: center; gap: 8px;">
+                    <span>📊</span> Exportar a Excel
+                </button>
+            </div>
             ${results.plot ? `<img src="data:image/png;base64,${results.plot}" style="width: 100%; border-radius: var(--radius-md);" alt="Backtesting Plot" />` : '<p>No se pudo generar el gráfico</p>'}
         </div>
     `;
 
     container.scrollIntoView({ behavior: 'smooth' });
+
+    // Add export button event listener
+    const exportBtns = content.querySelectorAll('.export-risk-btn');
+    exportBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleExportExcel('risk');
+        });
+    });
 }
 
 /**
@@ -472,12 +508,25 @@ function renderDrawdownResults(results) {
         </div>
         
         <div class="plot-container glass-card" style="margin-top: var(--spacing-lg); padding: var(--spacing-md); border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-            <h3 style="margin-bottom: var(--spacing-md);">Análisis de Drawdown</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h3 style="margin: 0;">Análisis de Drawdown</h3>
+                <button class="btn btn-secondary export-risk-btn" style="display: flex; align-items: center; gap: 8px;">
+                    <span>📊</span> Exportar a Excel
+                </button>
+            </div>
             ${results.plot ? `<img src="data:image/png;base64,${results.plot}" style="width: 100%; border-radius: var(--radius-md);" alt="Drawdown Plot" />` : '<p>No se pudo generar el gráfico</p>'}
         </div>
     `;
 
     container.scrollIntoView({ behavior: 'smooth' });
+
+    // Add export button event listener
+    const exportBtns = content.querySelectorAll('.export-risk-btn');
+    exportBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleExportExcel('risk');
+        });
+    });
 }
 
 /**
@@ -516,12 +565,25 @@ function renderVarMcResults(results) {
         </div>
         
         <div class="plot-container glass-card" style="margin-top: var(--spacing-lg); padding: var(--spacing-md); border-radius: var(--radius-lg); border: 1px solid var(--glass-border);">
-            <h3 style="margin-bottom: var(--spacing-md);">Monte Carlo: Simulación de Trayectorias</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h3 style="margin: 0;">Monte Carlo: Simulación de Trayectorias</h3>
+                <button class="btn btn-secondary export-risk-btn" style="display: flex; align-items: center; gap: 8px;">
+                    <span>📊</span> Exportar a Excel
+                </button>
+            </div>
             ${results.plot ? `<img src="data:image/png;base64,${results.plot}" style="width: 100%; border-radius: var(--radius-md);" alt="Monte Carlo Plot" />` : '<p>No se pudo generar el gráfico</p>'}
         </div>
     `;
 
     container.scrollIntoView({ behavior: 'smooth' });
+
+    // Add export button event listener
+    const exportBtns = content.querySelectorAll('.export-risk-btn');
+    exportBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleExportExcel('risk');
+        });
+    });
 }
 
 /**

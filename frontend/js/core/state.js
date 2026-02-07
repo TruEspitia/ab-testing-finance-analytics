@@ -10,6 +10,8 @@ export const appState = {
     lastSCMResults: null,
     lastRegressionResults: null,
     lastClusteringResults: null,
+    lastMonteCarloResults: null,
+    lastRiskResults: null,
     availableFunctions: [],
     currentView: 'ab-testing', // Por defecto
     theme: localStorage.getItem('theme') || 'dark'

@@ -98,6 +98,297 @@ class ReportGenerator:
         return output
 
     @staticmethod
+    def generate_risk_report(data: Dict[str, Any], chart_images: List[str]) -> io.BytesIO:
+        """
+        Genera un Excel con los resultados de análisis de riesgo (VaR/CVaR, Maximum Drawdown, Backtesting).
+        """
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Análisis de Riesgo')
+        
+        # Estilos
+        title_fmt = workbook.add_format({'bold': True, 'size': 16, 'font_color': '#dc2626'})
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#fef2f2', 'border': 1})
+        label_fmt = workbook.add_format({'font_color': '#64748b'})
+        metric_fmt = workbook.add_format({'num_format': '0.0000', 'bold': True})
+        percent_fmt = workbook.add_format({'num_format': '0.00%', 'bold': True})
+        date_fmt = workbook.add_format({'num_format': 'yyyy-mm-dd'})
+        
+        # Título
+        sheet.write('A1', 'Informe de Análisis de Riesgo', title_fmt)
+        sheet.write('A2', f'Fecha de generación: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', label_fmt)
+        
+        # Información básica
+        sheet.write('A4', 'Configuración del Análisis', header_fmt)
+        sheet.write('A5', 'Dataset ID:', label_fmt)
+        sheet.write('B5', data.get('dataset_id', 'N/A'))
+        
+        row = 7
+        
+        # VaR/CVaR Analysis
+        if 'var' in data or 'cvar' in data:
+            sheet.write(f'A{row}', 'Análisis VaR/CVaR', header_fmt)
+            row += 1
+            
+            if 'var' in data:
+                sheet.write(f'A{row}', 'Value at Risk (VaR):', label_fmt)
+                sheet.write(f'B{row}', data.get('var', 0), percent_fmt)
+                row += 1
+            
+            if 'cvar' in data:
+                sheet.write(f'A{row}', 'Conditional VaR (CVaR):', label_fmt)
+                sheet.write(f'B{row}', data.get('cvar', 0), percent_fmt)
+                row += 1
+            
+            if 'confidence_level' in data:
+                sheet.write(f'A{row}', 'Nivel de Confianza:', label_fmt)
+                sheet.write(f'B{row}', data.get('confidence_level', 0), percent_fmt)
+                row += 1
+            
+            if 'horizon' in data:
+                sheet.write(f'A{row}', 'Horizonte Temporal:', label_fmt)
+                sheet.write(f'B{row}', f"{data.get('horizon', 0)} días")
+                row += 1
+            
+            if 'method' in data:
+                sheet.write(f'A{row}', 'Método:', label_fmt)
+                sheet.write(f'B{row}', data.get('method', 'N/A').title())
+                row += 1
+            
+            row += 1
+        
+        # Maximum Drawdown Analysis
+        if 'max_drawdown' in data:
+            sheet.write(f'A{row}', 'Análisis Maximum Drawdown', header_fmt)
+            row += 1
+            
+            sheet.write(f'A{row}', 'Maximum Drawdown:', label_fmt)
+            sheet.write(f'B{row}', data.get('max_drawdown', 0), percent_fmt)
+            row += 1
+            
+            if 'peak_date' in data:
+                sheet.write(f'A{row}', 'Fecha del Peak:', label_fmt)
+                sheet.write(f'B{row}', data.get('peak_date', 'N/A'))
+                row += 1
+            
+            if 'peak_value' in data:
+                sheet.write(f'A{row}', 'Valor del Peak:', label_fmt)
+                sheet.write(f'B{row}', data.get('peak_value', 0), metric_fmt)
+                row += 1
+            
+            if 'trough_date' in data:
+                sheet.write(f'A{row}', 'Fecha del Trough:', label_fmt)
+                sheet.write(f'B{row}', data.get('trough_date', 'N/A'))
+                row += 1
+            
+            if 'trough_value' in data:
+                sheet.write(f'A{row}', 'Valor del Trough:', label_fmt)
+                sheet.write(f'B{row}', data.get('trough_value', 0), metric_fmt)
+                row += 1
+            
+            if 'recovery_date' in data:
+                sheet.write(f'A{row}', 'Fecha de Recuperación:', label_fmt)
+                sheet.write(f'B{row}', data.get('recovery_date', 'No recuperado'))
+                row += 1
+            
+            if 'recovery_days' in data and data.get('recovery_days'):
+                sheet.write(f'A{row}', 'Días para Recuperación:', label_fmt)
+                sheet.write(f'B{row}', data.get('recovery_days', 0))
+                row += 1
+            
+            row += 1
+        
+        # Backtesting Analysis
+        if 'total_observations' in data:
+            sheet.write(f'A{row}', 'Análisis de Backtesting', header_fmt)
+            row += 1
+            
+            sheet.write(f'A{row}', 'Observaciones Totales:', label_fmt)
+            sheet.write(f'B{row}', data.get('total_observations', 0))
+            row += 1
+            
+            sheet.write(f'A{row}', 'Número de Violaciones:', label_fmt)
+            sheet.write(f'B{row}', data.get('num_violations', 0))
+            row += 1
+            
+            sheet.write(f'A{row}', 'Tasa de Violación:', label_fmt)
+            sheet.write(f'B{row}', data.get('violation_rate', 0), percent_fmt)
+            row += 1
+            
+            sheet.write(f'A{row}', 'Tasa Esperada:', label_fmt)
+            sheet.write(f'B{row}', data.get('expected_rate', 0), percent_fmt)
+            row += 1
+            
+            sheet.write(f'A{row}', 'Test de Kupiec (LR Stat):', label_fmt)
+            sheet.write(f'B{row}', data.get('kupiec_lr_stat', 0), metric_fmt)
+            row += 1
+            
+            sheet.write(f'A{row}', 'P-Valor:', label_fmt)
+            sheet.write(f'B{row}', data.get('kupiec_p_value', 0), metric_fmt)
+            row += 1
+            
+            test_passed = data.get('test_passed', False)
+            sheet.write(f'A{row}', 'Test Aprobado:', label_fmt)
+            sheet.write(f'B{row}', 'SÍ' if test_passed else 'NO', 
+                       workbook.add_format({'bg_color': '#dcfce7', 'font_color': '#166534', 'bold': True}) if test_passed 
+                       else workbook.add_format({'bg_color': '#fee2e2', 'font_color': '#991b1b', 'bold': True}))
+            row += 1
+            
+            row += 1
+        
+        # Interpretación
+        if 'interpretation' in data:
+            sheet.write(f'A{row}', 'Interpretación', header_fmt)
+            sheet.merge_range(f'A{row+1}:E{row+6}', data.get('interpretation', ''), 
+                              workbook.add_format({'text_wrap': True, 'align': 'top'}))
+            row += 7
+        
+        # Imágenes de los gráficos
+        img_row = 4
+        for i, img_data in enumerate(chart_images):
+            if img_data:
+                if ',' in img_data:
+                    header, encoded = img_data.split(',', 1)
+                else:
+                    encoded = img_data
+                
+                image_bytes = io.BytesIO(base64.b64decode(encoded))
+                sheet.insert_image(f'G{img_row}', f'risk_chart_{i}.png', 
+                                   {'image_data': image_bytes, 'x_scale': 0.6, 'y_scale': 0.6})
+                img_row += 20
+        
+        workbook.close()
+        output.seek(0)
+        return output
+
+    @staticmethod
+    def generate_monte_carlo_report(data: Dict[str, Any], chart_images: List[str]) -> io.BytesIO:
+        """
+        Genera un Excel con los resultados de simulación Monte Carlo.
+        """
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Monte Carlo')
+        
+        # Estilos
+        title_fmt = workbook.add_format({'bold': True, 'size': 16, 'font_color': '#7c3aed'})
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#f3f4f6', 'border': 1})
+        label_fmt = workbook.add_format({'font_color': '#64748b'})
+        metric_fmt = workbook.add_format({'num_format': '0.0000', 'bold': True})
+        percent_fmt = workbook.add_format({'num_format': '0.00%', 'bold': True})
+        
+        # Título
+        sheet.write('A1', 'Informe de Simulación Monte Carlo', title_fmt)
+        sheet.write('A2', f'Fecha de generación: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', label_fmt)
+        
+        # Información básica
+        sheet.write('A4', 'Configuración de la Simulación', header_fmt)
+        sheet.write('A5', 'Dataset ID:', label_fmt)
+        sheet.write('B5', data.get('dataset_id', 'N/A'))
+        
+        # Métricas principales
+        metrics = data.get('metrics', {})
+        if metrics:
+            sheet.write('A7', 'Métricas de la Simulación', header_fmt)
+            row = 8
+            
+            if 'initial_value' in metrics:
+                sheet.write(f'A{row}', 'Valor Inicial:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('initial_value', 0), metric_fmt)
+                row += 1
+            
+            if 'expected_final_value' in metrics:
+                sheet.write(f'A{row}', 'Valor Final Esperado:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('expected_final_value', 0), metric_fmt)
+                row += 1
+            
+            if 'median_final_value' in metrics:
+                sheet.write(f'A{row}', 'Valor Final Mediano:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('median_final_value', 0), metric_fmt)
+                row += 1
+            
+            if 'std_final_value' in metrics:
+                sheet.write(f'A{row}', 'Desviación Estándar:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('std_final_value', 0), metric_fmt)
+                row += 1
+            
+            if 'var_95' in metrics:
+                sheet.write(f'A{row}', 'VaR 95%:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('var_95', 0), metric_fmt)
+                row += 1
+            
+            if 'probability_profit' in metrics:
+                sheet.write(f'A{row}', 'Probabilidad de Ganancia:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('probability_profit', 0), percent_fmt)
+                row += 1
+            
+            if 'iterations' in metrics:
+                sheet.write(f'A{row}', 'Número de Iteraciones:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('iterations', 0))
+                row += 1
+            
+            if 'horizon' in metrics:
+                sheet.write(f'A{row}', 'Horizonte Temporal:', label_fmt)
+                sheet.write(f'B{row}', f"{metrics.get('horizon', 0)} períodos")
+                row += 1
+            
+            if 'drift' in metrics:
+                sheet.write(f'A{row}', 'Drift (Tendencia):', label_fmt)
+                sheet.write(f'B{row}', metrics.get('drift', 0), metric_fmt)
+                row += 1
+            
+            if 'volatility' in metrics:
+                sheet.write(f'A{row}', 'Volatilidad:', label_fmt)
+                sheet.write(f'B{row}', metrics.get('volatility', 0), metric_fmt)
+                row += 1
+            
+            row += 1
+        
+        # Bandas de confianza
+        confidence_bands = data.get('confidence_bands', {})
+        if confidence_bands:
+            sheet.write(f'A{row}', 'Bandas de Confianza (Valores Finales)', header_fmt)
+            row += 1
+            
+            percentiles = ['p5', 'p25', 'p50', 'p75', 'p95']
+            percentile_names = ['5%', '25%', '50% (Mediana)', '75%', '95%']
+            
+            for i, (p_key, p_name) in enumerate(zip(percentiles, percentile_names)):
+                if p_key in confidence_bands:
+                    final_values = confidence_bands[p_key]
+                    if final_values:
+                        sheet.write(f'A{row}', f'Percentil {p_name}:', label_fmt)
+                        sheet.write(f'B{row}', final_values[-1], metric_fmt)  # Último valor (final)
+                        row += 1
+            
+            row += 1
+        
+        # Interpretación
+        if 'interpretation' in data:
+            sheet.write(f'A{row}', 'Interpretación', header_fmt)
+            sheet.merge_range(f'A{row+1}:E{row+6}', data.get('interpretation', ''), 
+                              workbook.add_format({'text_wrap': True, 'align': 'top'}))
+            row += 7
+        
+        # Imágenes de los gráficos
+        img_row = 4
+        for i, img_data in enumerate(chart_images):
+            if img_data:
+                if ',' in img_data:
+                    header, encoded = img_data.split(',', 1)
+                else:
+                    encoded = img_data
+                
+                image_bytes = io.BytesIO(base64.b64decode(encoded))
+                sheet.insert_image(f'G{img_row}', f'monte_carlo_chart_{i}.png', 
+                                   {'image_data': image_bytes, 'x_scale': 0.6, 'y_scale': 0.6})
+                img_row += 20
+        
+        workbook.close()
+        output.seek(0)
+        return output
+
+    @staticmethod
     def generate_scm_report(data: Dict[str, Any], chart_images: List[str]) -> io.BytesIO:
         """
         Genera un Excel con los resultados del Método de Control Sintético.

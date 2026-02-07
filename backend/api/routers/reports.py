@@ -37,6 +37,12 @@ async def export_excel(request: ExportRequest):
         elif request.analysis_type == 'clustering':
             excel_io = ReportGenerator.generate_clustering_report(request.data, request.charts)
             filename = f"Clustering_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        elif request.analysis_type == 'risk':
+            excel_io = ReportGenerator.generate_risk_report(request.data, request.charts)
+            filename = f"Risk_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        elif request.analysis_type == 'monte_carlo':
+            excel_io = ReportGenerator.generate_monte_carlo_report(request.data, request.charts)
+            filename = f"Monte_Carlo_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         else:
             raise HTTPException(status_code=400, detail="Tipo de análisis no soportado para exportación")
         

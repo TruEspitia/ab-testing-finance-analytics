@@ -53,6 +53,14 @@ export async function fetchDatasetPreview(datasetId, nRows = 100) {
 }
 
 /**
+ * Obtiene información de un dataset específico
+ */
+export async function fetchDataset(datasetId) {
+    const response = await fetch(`${API_BASE_URL}/dataset/${datasetId}`);
+    return await response.json();
+}
+
+/**
  * Elimina un dataset
  */
 export async function deleteDataset(datasetId) {

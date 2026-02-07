@@ -22,10 +22,17 @@ export async function handleExportExcel(type) {
         data = appState.lastClusteringResults;
     } else if (type === 'monte_carlo') {
         data = appState.lastMonteCarloResults;
+    } else if (type === 'risk') {
+        data = appState.lastRiskResults;
     }
 
+    // Debug logging
+    console.log('Export type:', type);
+    console.log('AppState lastRiskResults:', appState.lastRiskResults);
+    console.log('Data to export:', data);
+
     if (!data) {
-        showToast('No hay resultados para exportar', 'error');
+        showToast('No hay resultados para exportar. Ejecuta primero un análisis de riesgo.', 'error');
         return;
     }
 
@@ -48,6 +55,27 @@ export async function handleExportExcel(type) {
             } else if (type === 'clustering' && data.plot_base64) {
                 // El clustering ya trae la imagen base64 del backend
                 charts.push(data.plot_base64);
+            } else if (type === 'risk') {
+                // Capturar gráficos del Risk Calculator
+                // En Risk Calculator las imágenes vienen directamente en base64 desde el backend
+                const riskResultsContainer = document.getElementById('riskResultsContent');
+                if (riskResultsContainer) {
+                    const images = riskResultsContainer.querySelectorAll('img');
+                    images.forEach(img => {
+                        if (img.src && img.src.startsWith('data:image/png;base64,')) {
+                            charts.push(img.src);
+                        }
+                    });
+                }
+            } else if (type === 'monte_carlo') {
+                // Capturar gráficos de la simulación Monte Carlo (Plotly)
+                try {
+                    const img1 = await Plotly.toImage('mcTrajectoriesPlot', { format: 'png', width: 800, height: 500 });
+                    const img2 = await Plotly.toImage('mcDistributionPlot', { format: 'png', width: 800, height: 500 });
+                    charts.push(img1, img2);
+                } catch (e) {
+                    console.error('Error capturing Monte Carlo charts:', e);
+                }
             }
         }
 
@@ -85,7 +113,8 @@ function getFilename(type) {
         'scm': 'SCM_Report.xlsx',
         'regression': 'Regression_Report.xlsx',
         'clustering': 'Clustering_Report.xlsx',
-        'monte_carlo': 'Monte_Carlo_Report.xlsx'
+        'monte_carlo': 'Monte_Carlo_Report.xlsx',
+        'risk': 'Risk_Analysis_Report.xlsx'
     };
     return names[type] || 'Finance_Analytics_Report.xlsx';
 }
