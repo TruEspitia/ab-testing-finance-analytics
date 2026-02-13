@@ -82,8 +82,8 @@ class SequentialEngine(BaseEngine):
     def _prepare_de_options(self, original_options: FitOptions, time_budget: float) -> FitOptions:
         """Prepara opciones optimizadas para la fase DE."""
         de_options = FitOptions(
-            max_iterations=min(original_options.max_iterations, 100),  # Limitado para DE
-            tolerance=original_options.tolerance * 10,  # Menos estricto para DE
+            max_iterations=min(original_options.max_iterations, 300),  # IMPROVED: Increased from 100 to 300
+            tolerance=original_options.tolerance * 50,  # IMPROVED: More relaxed from 10x to 50x
             timeout=time_budget,
             verbose=original_options.verbose,
             seed=original_options.seed,

@@ -164,10 +164,31 @@ class DualVariableAnalyzer:
             name=f'Tendencia (R²={r_value**2:.3f})', line=dict(color='red', width=2, dash='dash')
         ))
         fig.update_layout(
-            title=f'{var_y} vs {var_x} ({method_name})',
-            xaxis_title=var_x, yaxis_title=var_y,
-            plot_bgcolor='rgba(255, 255, 255, 0.03)', paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='#f8fafc'), showlegend=True
+            title=dict(
+                text=f'{var_y} vs {var_x} ({method_name})',
+                font=dict(size=18, color='#f8fafc')
+            ),
+            xaxis=dict(
+                title=dict(text=var_x, font=dict(size=14, color='#f8fafc')),
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                showgrid=True
+            ),
+            yaxis=dict(
+                title=dict(text=var_y, font=dict(size=14, color='#f8fafc')),
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                showgrid=True
+            ),
+            plot_bgcolor='rgba(255, 255, 255, 0.03)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#f8fafc', size=12),
+            showlegend=True,
+            legend=dict(
+                bgcolor='rgba(30, 30, 30, 0.8)',
+                bordercolor='rgba(255, 255, 255, 0.2)',
+                borderwidth=1,
+                font=dict(size=12, color='#f8fafc')
+            ),
+            hovermode='closest'
         )
         
         return {

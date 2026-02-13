@@ -11,12 +11,20 @@ def _de_objective_func(params_array, model, x_data, y_data, weights, bounds, par
         # model.evaluate expects individual parameter values, not a dict
         y_pred = model.evaluate(x_data, *params_array)
         
-        # Check validity
+        # Check validity - IMPROVED
+        if y_pred is None or len(y_pred) == 0:
+            return 1e12
+            
         if np.any(np.isnan(y_pred)) or np.any(np.isinf(y_pred)):
             return 1e10
         
         # Robust error calculation with weights
         residuals = y_data - y_pred
+        
+        # IMPROVED: Validate residuals
+        if np.any(np.isnan(residuals)) or np.any(np.isinf(residuals)):
+            return 1e10
+            
         weighted_sse = np.sum(weights * residuals**2)
         
         # Penalty for values out of bounds (soft constraints)
@@ -27,7 +35,13 @@ def _de_objective_func(params_array, model, x_data, y_data, weights, bounds, par
             elif param_val > upper:
                 penalty += 1000 * (param_val - upper)**2
         
-        return weighted_sse + penalty
+        total_cost = weighted_sse + penalty
+        
+        # IMPROVED: Validate final cost
+        if np.isnan(total_cost) or np.isinf(total_cost):
+            return 1e10
+            
+        return total_cost
         
     except Exception:
         return 1e10
@@ -114,22 +128,23 @@ class DEEngine(BaseEngine):
                 # Calculate remaining time for this strategy
                 strategy_timeout = (time_budget - elapsed) / len(strategies_to_try)
                 
-                # Limit maxiter based on remaining time (rough heuristic: ~1-10 iter/sec)
-                effective_maxiter = min(options.max_iterations, int(strategy_timeout * 5))
+                # IMPROVED: More realistic iterations/second for DE with parallelization
+                # DE is fast, especially with workers=-1 (multiprocessing)
+                effective_maxiter = min(options.max_iterations, int(strategy_timeout * 15))
                 
                 result = differential_evolution(
                     _de_objective_func,
                     bounds,
                     args=args,
                     strategy=strategy,
-                    maxiter=max(10, effective_maxiter),  # At least 10 iterations
+                    maxiter=max(50, effective_maxiter),  # IMPROVED: At least 50 iterations
                     popsize=popsize,
                     tol=options.tolerance,
                     atol=options.tolerance,
                     callback=callback_wrapper,
                     polish=True,  # Refinamiento local final
                     init='latinhypercube',  # Mejor distribución inicial
-                    workers=-1,  # Paralelización si es posible
+                    workers=1,  # FIXED: Disabled multiprocessing to avoid Windows spawn issues
                     seed=options.seed,
                     updating='deferred'  # Mejor para funciones costosas
                 )
@@ -220,9 +235,10 @@ class DEEngine(BaseEngine):
     def _calculate_population_size(self, n_params):
         """Calcula tamaño de población adaptativo."""
         if self.adaptive_population:
-            # Regla heurística: más parámetros necesitan más población
-            return max(15, min(50, 5 * n_params))
-        return 15
+            # IMPROVED: Larger population for better exploration
+            # More parameters need more population for thorough search
+            return max(20, min(60, 7 * n_params))  # Increased from 5*n to 7*n
+        return 20  # Increased from 15 to 20
     
     def _estimate_parameter_errors(self, objective_func, best_params, bounds, args):
         """Estima errores de parámetros usando diferencias finitas."""

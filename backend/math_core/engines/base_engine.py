@@ -124,8 +124,8 @@ class BaseEngine(ABC):
         # Convert dict options to FitOptions
         opts = options or {}
         fit_options = FitOptions(
-            max_iterations=opts.get('max_iter', 2000), # Map old 'max_iter'
-            timeout=opts.get('timeout', 120.0), # Increased to 120s for complex functions like Fourier
+            max_iterations=opts.get('max_iter', 3000), # IMPROVED: Increased from 2000 to 3000
+            timeout=opts.get('timeout', 300.0), # IMPROVED: Increased from 120s to 300s (5 min)
             bounds=opts.get('bounds_dict', None) # Assuming bounds passed as dict
         )
         
