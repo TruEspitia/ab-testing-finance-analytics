@@ -1,0 +1,18 @@
+<PARAMETERS>
+deltaG0, 2.000e+04, 1
+m, 1.000e+04, 1
+SN, 1.0000, 1
+slopeN, 0, 1
+SU, 0, 1
+slopeU, 0, 1
+T, 293.1500, 0
+<FORMULA>
+# denaturation by chemical denaturants
+
+R = 8.3145
+deltaG = deltaG0 - m * x
+K = exp(-deltaG / R / T)
+fN = 1 / (1 + K)
+y = fN * (SN + slopeN * x) + (1 - fN) * (SU + slopeU * x)
+<METADATA>
+complexity: 3

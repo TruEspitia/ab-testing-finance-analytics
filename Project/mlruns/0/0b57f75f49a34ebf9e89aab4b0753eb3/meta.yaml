@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/aeshu/Project/mlruns/0/0b57f75f49a34ebf9e89aab4b0753eb3/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 0b57f75f49a34ebf9e89aab4b0753eb3
+run_name: shivering-hawk-509
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1756003674610
+status: 1
+tags: []
+user_id: aeshu

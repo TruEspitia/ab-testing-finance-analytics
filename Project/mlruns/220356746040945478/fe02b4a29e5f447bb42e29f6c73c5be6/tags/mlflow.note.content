@@ -1,0 +1,1 @@
+Baseline linear regression model for predicting Zone Affluence Score. Used as a benchmark for comparison. No tree-based handling or interaction modeling included. Simple and interpretable.

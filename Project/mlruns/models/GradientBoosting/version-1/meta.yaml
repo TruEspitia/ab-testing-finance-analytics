@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1756015079284
+current_stage: None
+description: null
+last_updated_timestamp: 1756015079284
+name: GradientBoosting
+run_id: 55f9eee63b3c463ba9c7b6eae779b501
+run_link: null
+source: file:///C:/Users/aeshu/Project/mlruns/412309400369977561/55f9eee63b3c463ba9c7b6eae779b501/artifacts/gradientboosting
+status: READY
+status_message: null
+storage_location: file:///C:/Users/aeshu/Project/mlruns/412309400369977561/55f9eee63b3c463ba9c7b6eae779b501/artifacts/gradientboosting
+user_id: null
+version: 1

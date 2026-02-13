@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/aeshu/Project/mlruns/0/models/m-b8b625b9ba8047ae89ba8ac7258efd90/artifacts
+creation_timestamp: 1755806440902
+experiment_id: '0'
+last_updated_timestamp: 1755806446019
+model_id: m-b8b625b9ba8047ae89ba8ac7258efd90
+model_type: null
+name: random_forest_model
+source_run_id: a4c2e7fd03ab48719926ed43a3e81e1c
+status: 2
+status_message: null

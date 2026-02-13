@@ -1,0 +1,15 @@
+<METADATA>
+complexity: 3
+description: Fourier Series approximation (2nd order / Two Harmonics). y = a0 + Σ(an*cos(nwx) + bn*sin(nwx))
+
+<PARAMETERS>
+a0, 0
+a1, 1
+b1, 1
+a2, 0.5
+b2, 0.5
+w, 1
+
+<FORMULA>
+# Fourier Series (2nd Order)
+y = a0 + a1*cos(w*x) + b1*sin(w*x) + a2*cos(2*w*x) + b2*sin(2*w*x)

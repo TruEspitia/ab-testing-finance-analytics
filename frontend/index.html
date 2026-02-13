@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B Testing Finance Analytics</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Background gradient -->
+    <div class="gradient-bg"></div>
+
+    <div class="app-shell">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <span class="logo-text">Finance Analytics</span>
+                </div>
+                <button id="toggleSidebar" class="icon-btn">
+                    <span class="material-icons">menu</span>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <div class="nav-title">
+                        <span class="material-icons">work_outline</span>
+                        <span>Opciones de trabajo</span>
+                    </div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#" class="nav-item" data-view="quick-stats" id="nav-quick-stats">
+                                <span class="material-icons">speed</span>
+                                <span>Quick Stats</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="regression" id="nav-regression">
+                                <span class="material-icons">show_chart</span>
+                                <span>Regresiones</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="clustering" id="nav-clustering">
+                                <span class="material-icons">bubble_chart</span>
+                                <span>Clustering</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item active" data-view="ab-testing" id="nav-ab">
+                                <span class="material-icons">analytics</span>
+                                <span>Análisis A/B</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="scm" id="nav-scm">
+                                <span class="material-icons">science</span>
+                                <span>Pruebas de Control</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="monte-carlo" id="nav-monte-carlo">
+                                <span class="material-icons">trending_up</span>
+                                <span>Monte Carlo</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="nav-item" data-view="risk-calculator" id="nav-risk-calculator">
+                                <span class="material-icons">shield</span>
+                                <span>Risk Calculator</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-group">
+                    <div class="nav-title">
+                        <span class="material-icons" style="font-size: 14px;">support</span>
+                        <span>Ayuda</span>
+                    </div>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#" class="nav-item" id="startTourBtn">
+                                <span class="material-icons">help_outline</span>
+                                <span>Iniciar Tour</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">ME</div>
+                    <div class="user-info">
+                        <span class="user-name">Miguel Espitia</span>
+                        <span class="user-role">ADMINISTRADOR</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="view-title">
+                    <h1 id="currentViewTitle">Análisis A/B</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="top-bar-stats" id="statsBar">
+                        <div class="stat-pill">
+                            <span class="pill-label">Datasets:</span>
+                            <span class="pill-value" id="datasetCount">0</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="pill-label">Memoria:</span>
+                            <span class="pill-value" id="memoryUsage">0 MB</span>
+                        </div>
+                    </div>
+                    <button id="themeToggle" class="theme-toggle-btn" title="Cambiar tema">
+                        <span class="material-icons">dark_mode</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Upload Section (Common) -->
+                <section class="glass-card upload-section">
+                    <h2 class="section-title">
+                        <span class="icon">📤</span>
+                        Cargar Datos
+                    </h2>
+
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <h3>Arrastra y suelta tus archivos aquí</h3>
+                        <p>o haz clic para seleccionar</p>
+                        <p class="supported-formats">✨ Puedes seleccionar múltiples archivos</p>
+                        <p class="supported-formats">Formatos soportados: CSV, XLSX, JSON</p>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json" multiple hidden>
+                    </div>
+
+                    <div class="upload-progress hidden" id="uploadProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Cargando...</p>
+                    </div>
+                </section>
+
+                <!-- Datasets List Section (Common) -->
+                <section class="glass-card datasets-section">
+                    <h2 class="section-title">
+                        <span class="icon">💾</span>
+                        Datasets Cargados
+                    </h2>
+
+                    <div class="datasets-list" id="datasetsList">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <p>No hay datasets cargados</p>
+                            <p class="empty-hint">Sube un archivo para comenzar</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Health Check Section (Common) -->
+                <section class="glass-card health-check-section hidden" id="healthCheckSection">
+                    <h2 class="section-title">
+                        <span class="icon">🩺</span>
+                        Estado de Salud de Datos
+                    </h2>
+
+                    <div id="healthCheckContent" class="health-check-grid">
+                        <div class="health-score-container">
+                            <div class="health-outer-circle">
+                                <div class="health-inner-circle">
+                                    <span id="healthScoreValue">--</span>
+                                    <span class="health-score-label">Salud</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="health-metrics">
+                            <div class="metric-card">
+                                <span class="metric-icon">🚫</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Nulos</span>
+                                    <span class="metric-value" id="nullCount">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-icon">🔄</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Duplicados</span>
+                                    <span class="metric-value" id="duplicateCount">--</span>
+                                </div>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-icon">📊</span>
+                                <div class="metric-info">
+                                    <span class="metric-name">Columnas</span>
+                                    <span class="metric-value" id="healthColCount">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="health-suggestions" id="healthSuggestions">
+                        <!-- Sugerencias se cargarán aquí -->
+                    </div>
+                </section>
+
+                <!-- Data Preview Section (Common) -->
+                <section class="glass-card preview-section hidden" id="previewSection">
+                    <h2 class="section-title">
+                        <span class="icon">👁️</span>
+                        Vista Previa de Datos
+                    </h2>
+
+                    <div class="preview-controls">
+                        <select id="datasetSelector" class="select-input">
+                            <option value="">Selecciona un dataset...</option>
+                        </select>
+                        <button class="btn btn-secondary" id="refreshPreviewBtn">
+                            <span>🔄</span> Actualizar
+                        </button>
+                    </div>
+
+                    <div class="table-container" id="tableContainer">
+                        <table class="data-table" id="dataTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="preview-info" id="previewInfo"></div>
+                </section>
+
+                <!-- ANALYSIS VIEWS -->
+
+                <!-- A/B Testing View -->
+                <div id="view-ab-testing" class="analysis-view">
+                    <!-- Analysis Configuration Section -->
+                    <section class="glass-card analysis-section hidden" id="analysisSection">
+                        <h2 class="section-title">
+                            <span class="icon">⚙️</span>
+                            Configuración del Análisis A/B
+                        </h2>
+
+                        <form id="analysisForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="analysisDataset">Dataset</label>
+                                    <select id="analysisDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="groupColumn">Columna de Grupo</label>
+                                    <select id="groupColumn" class="select-input" required>
+                                        <option value="">Selecciona una columna...</option>
+                                    </select>
+                                    <small>Columna que identifica control vs treatment</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="targetColumn">Columna Objetivo</label>
+                                    <select id="targetColumn" class="select-input" required>
+                                        <option value="">Selecciona una columna...</option>
+                                    </select>
+                                    <small>Variable a medir (ej: signed_up)</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="controlValue">Valor Control</label>
+                                    <input type="text" id="controlValue" class="text-input"
+                                        placeholder="ej: No, Control, 0" required>
+                                    <small>Valor que identifica el grupo control</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="treatmentValue">Valor Treatment</label>
+                                    <input type="text" id="treatmentValue" class="text-input"
+                                        placeholder="ej: Yes, Treatment, 1" required>
+                                    <small>Valor que identifica el grupo treatment</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="alphaValue">Nivel de Significancia (α)</label>
+                                    <input type="number" id="alphaValue" class="text-input" value="0.05" step="0.01"
+                                        min="0.01" max="0.1" required>
+                                    <small>Típicamente 0.05 (95% de confianza)</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🚀</span> Ejecutar Análisis
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Results Section -->
+                    <section class="glass-card results-section hidden" id="resultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📈</span>
+                                Resultad. A/B Testing
+                            </span>
+                            <button id="exportABExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="resultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- SCM View -->
+                <div id="view-scm" class="analysis-view hidden">
+                    <!-- Synthetic Control Configuration Section -->
+                    <section class="glass-card scm-section" id="scmSection">
+                        <h2 class="section-title">
+                            <span class="icon">🧪</span>
+                            Contr. Sintético
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Estima el efecto causal construyendo un "contrafactual".
+                        </p>
+
+                        <form id="scmForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="scmDataset">Dataset</label>
+                                    <select id="scmDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="timeColumn">Columna de Tiempo</label>
+                                    <select id="timeColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Variable temporal</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="unitColumn">Columna de Unidades</label>
+                                    <select id="unitColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Identifica cada entidad</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="scmTargetColumn">Variable de Resultado</label>
+                                    <select id="scmTargetColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="treatedUnit">Unidad Tratada</label>
+                                    <select id="treatedUnit" class="select-input" required>
+                                        <option value="">Selecciona unidad...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="treatmentTime">Momento del Tratamiento</label>
+                                    <input type="number" id="treatmentTime" class="text-input" step="any" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🔬</span> Ejecutar SCM
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- SCM Results Section -->
+                    <section class="glass-card scm-results-section hidden" id="scmResultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados SCM
+                            </span>
+                            <button id="exportSCMExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="scmResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Regression View -->
+                <div id="view-regression" class="analysis-view hidden">
+                    <!-- Regression / Curve Fitting Section -->
+                    <section class="glass-card regression-section" id="regressionSection">
+                        <h2 class="section-title">
+                            <span class="icon">📈</span>
+                            Regresión
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Ajusta funciones matemáticas con motores avanzados.
+                        </p>
+
+                        <form id="regressionForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="regressionDataset">Dataset</label>
+                                    <select id="regressionDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="xColumn">Columna X</label>
+                                    <select id="xColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="yColumn">Columna Y</label>
+                                    <select id="yColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="functionSelect">Función Matemática</label>
+                                    <select id="functionSelect" class="select-input" required>
+                                        <option value="">Cargando funciones...</option>
+                                    </select>
+                                    <small id="functionFormula">Selecciona una función</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="engineSelect">Motor de Optimización</label>
+                                    <select id="engineSelect" class="select-input" required>
+                                        <option value="sequential">Sequential (Híbrido)</option>
+                                        <option value="lm">Levenberg-Marquardt</option>
+                                        <option value="de">Differential Evolution</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>📐</span> Ejecutar Regresión
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Regression Results Section -->
+                    <section class="glass-card regression-results-section hidden" id="regressionResultsSection"
+                        style="max-height: 800px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Regresión
+                            </span>
+                            <button id="exportRegressionExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="regressionResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Clustering View -->
+                <div id="view-clustering" class="analysis-view hidden">
+                    <!-- Clustering Configuration Section -->
+                    <section class="glass-card clustering-section" id="clusteringSection">
+                        <h2 class="section-title">
+                            <span class="icon">🔮</span>
+                            Análisis de Clustering
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Agrupa datos usando K-means o DBSCAN con métricas de calidad.
+                        </p>
+
+                        <form id="clusteringForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="clusteringDataset">Dataset</label>
+                                    <select id="clusteringDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="featureColumns">Columnas para Clustering</label>
+                                    <select id="featureColumns" class="select-input" multiple required>
+                                        <option value="">Selecciona columnas...</option>
+                                    </select>
+                                    <small>Mantén Ctrl para seleccionar múltiples columnas numéricas</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="algorithmSelect">Algoritmo</label>
+                                    <select id="algorithmSelect" class="select-input" required>
+                                        <option value="kmeans">K-Means</option>
+                                        <option value="dbscan">DBSCAN</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- K-means options -->
+                            <div id="kmeansOptions">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="nClusters">Número de Clusters (K)</label>
+                                        <input type="number" id="nClusters" class="text-input" value="3" min="2"
+                                            max="20">
+                                        <small>Usa el gráfico del codo para elegir K óptimo</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" id="elbowPlotBtn" class="btn btn-secondary">
+                                            <span>📊</span> Gráfico del Codo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- DBSCAN options -->
+                            <div id="dbscanOptions" class="hidden">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="eps">Epsilon (Radio)</label>
+                                        <input type="number" id="eps" class="text-input" value="0.5" step="0.1"
+                                            min="0.1">
+                                        <small>Radio máximo para considerar vecinos</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="minSamples">Min Samples</label>
+                                        <input type="number" id="minSamples" class="text-input" value="5" min="2">
+                                        <small>Mínimo de puntos para formar un cluster</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🔮</span> Ejecutar Clustering
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Elbow Plot Section -->
+                    <section class="glass-card elbow-section hidden" id="elbowSection">
+                        <h2 class="section-title">
+                            <span class="icon">📈</span>
+                            Método del Codo
+                        </h2>
+                        <div id="elbowPlotContainer" style="text-align: center;">
+                            <!-- El gráfico se insertará aquí -->
+                        </div>
+                    </section>
+
+                    <!-- Clustering Results Section -->
+                    <section class="glass-card clustering-results-section hidden" id="clusteringResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Clustering
+                            </span>
+                            <button id="exportClusteringExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="clusteringResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                </div>
+
+                <!-- Quick Stats View -->
+                <div id="view-quick-stats" class="analysis-view hidden">
+                    <!-- Quick Stats Section -->
+                    <section class="glass-card quick-stats-section">
+                        <h2 class="section-title">
+                            <span class="icon">⚡</span>
+                            Quick Stats - Análisis Rápido
+                        </h2>
+
+                        <!-- Dataset Selector -->
+                        <div class="form-group">
+                            <label for="quickStatsDataset">Dataset</label>
+                            <select id="quickStatsDataset" class="select-input">
+                                <option value="">Selecciona un dataset...</option>
+                            </select>
+                        </div>
+
+                        <!-- Analysis Type Tabs -->
+                        <div class="stats-tabs" style="margin: var(--spacing-lg) 0;">
+                            <button class="stats-tab active" data-tab="single">
+                                <span class="material-icons">bar_chart</span>
+                                Una Variable
+                            </button>
+                            <button class="stats-tab" data-tab="dual">
+                                <span class="material-icons">scatter_plot</span>
+                                Dos Variables
+                            </button>
+                            <button class="stats-tab" data-tab="timeseries">
+                                <span class="material-icons">timeline</span>
+                                Serie Temporal
+                            </button>
+                        </div>
+
+                        <!-- Single Variable Analysis -->
+                        <div id="singleVarPanel" class="stats-panel">
+                            <div class="form-group">
+                                <label for="singleVariable">Variable a Analizar</label>
+                                <select id="singleVariable" class="select-input">
+                                    <option value="">Selecciona una variable...</option>
+                                </select>
+                            </div>
+                            <button id="analyzeSingleBtn" class="btn btn-primary btn-large"
+                                style="margin-top: var(--spacing-md);">
+                                <span class="material-icons">analytics</span>
+                                Analizar
+                            </button>
+                        </div>
+
+                        <!-- Dual Variable Analysis -->
+                        <div id="dualVarPanel" class="stats-panel hidden">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="variableX">Variable X</label>
+                                    <select id="variableX" class="select-input">
+                                        <option value="">Selecciona variable X...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="variableY">Variable Y</label>
+                                    <select id="variableY" class="select-input">
+                                        <option value="">Selecciona variable Y...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="correlationType">Tipo de Correlación</label>
+                                    <select id="correlationType" class="select-input">
+                                        <option value="pearson">Pearson (Lineal)</option>
+                                        <option value="spearman">Spearman (No Lineal / Rangos)</option>
+                                        <option value="kendall">Kendall (Asociación / Robusta)</option>
+                                        <option value="full">Analisis Completo (Todos + 3D)</option>
+                                    </select>
+                                    <small>Elige el método estadístico para analizar la relación</small>
+                                </div>
+                            </div>
+                            <button id="analyzeDualBtn" class="btn btn-primary btn-large"
+                                style="margin-top: var(--spacing-md);">
+                                <span class="material-icons">analytics</span>
+                                Analizar Relación
+                            </button>
+                        </div>
+
+                        <!-- Time Series Analysis -->
+                        <div id="timeSeriesPanel" class="stats-panel hidden">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Columna de Tiempo</label>
+                                    <select id="qsTimeColumn" class="select-input">
+                                        <option value="">Selecciona columna temporal...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Columna de Valores</label>
+                                    <select id="qsValueColumn" class="select-input">
+                                        <option value="">Selecciona valores a analizar...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Períodos a Pronosticar</label>
+                                    <input type="number" id="forecastPeriods" class="text-input" value="10" min="1"
+                                        max="365">
+                                </div>
+                                <div class="form-group" style="display: flex; align-items: center; padding-top: 30px;">
+                                    <label style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                                        <input type="checkbox" id="autoSelectParams" checked
+                                            style="width: 20px; height: 20px;">
+                                        Selección automática de parámetros ARIMA
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button id="analyzeTimeSeriesBtn" class="btn btn-primary btn-large"
+                                style="margin-top: var(--spacing-md);">
+                                <span class="material-icons">timeline</span>
+                                Analizar Serie Temporal
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Quick Stats Results Section -->
+                    <section class="glass-card quick-stats-results-section hidden" id="quickStatsResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span class="icon">📊</span>
+                            Resultados
+                        </h2>
+                        <div id="quickStatsResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Monte Carlo View -->
+                <div id="view-monte-carlo" class="analysis-view hidden">
+                    <!-- Monte Carlo Configuration Section -->
+                    <section class="glass-card monte-carlo-section" id="monteCarloSection">
+                        <h2 class="section-title">
+                            <span class="icon">🎲</span>
+                            Simulación Monte Carlo
+                        </h2>
+
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                            Proyecta valores futuros usando Movimiento Browniano Geométrico con bandas de confianza y
+                            métricas de riesgo.
+                        </p>
+
+                        <form id="monteCarloForm" class="analysis-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcDataset">Dataset</label>
+                                    <select id="mcDataset" class="select-input" required>
+                                        <option value="">Selecciona un dataset...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcTargetColumn">Variable a Proyectar</label>
+                                    <select id="mcTargetColumn" class="select-input" required>
+                                        <option value="">Selecciona columna...</option>
+                                    </select>
+                                    <small>Columna con datos históricos financieros</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcIterations">Número de Simulaciones</label>
+                                    <input type="number" id="mcIterations" class="text-input" value="1000" min="100"
+                                        max="10000" step="100" required>
+                                    <small>Entre 100 y 10,000 iteraciones</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="mcHorizon">Horizonte Temporal (períodos)</label>
+                                    <input type="number" id="mcHorizon" class="text-input" value="30" min="1" max="365"
+                                        required>
+                                    <small>Número de períodos futuro a proyectar</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mcDrift">Drift (opcional)</label>
+                                    <input type="number" id="mcDrift" class="text-input" step="0.0001"
+                                        placeholder="Auto">
+                                    <small>Tendencia (se auto-calcula si está vacío)</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="mcVolatility">Volatilidad (opcional)</label>
+                                    <input type="number" id="mcVolatility" class="text-input" step="0.0001"
+                                        placeholder="Auto">
+                                    <small>Desviación estándar (se auto-calcula si está vacío)</small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <span>🎲</span> Ejecutar Simulación
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Monte Carlo Results Section -->
+                    <section class="glass-card monte-carlo-results-section hidden" id="monteCarloResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span>
+                                <span class="icon">📊</span>
+                                Resultados Monte Carlo
+                            </span>
+                            <button id="exportMonteCarloExcel" class="btn btn-secondary btn-small">
+                                <span>📥</span> Exportar Excel
+                            </button>
+                        </h2>
+
+                        <div id="monteCarloResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Risk Calculator View -->
+                <div id="view-risk-calculator" class="analysis-view hidden">
+                    <!-- VaR Calculator Section -->
+                    <!-- Risk Calculator Section with Sub-Menu -->
+                    <section class="glass-card risk-calc-section" id="riskSection">
+                        <h2 class="section-title">
+                            <span class="icon">🛡️</span>
+                            Risk Calculator
+                        </h2>
+
+                        <!-- Sub-Menu Navigation -->
+                        <div class="risk-submenu">
+                            <button class="submenu-btn active" data-service="var-cvar">
+                                <span class="material-icons">shield</span>
+                                VaR / CVaR
+                            </button>
+                            <button class="submenu-btn" data-service="backtesting">
+                                <span class="material-icons">verified</span>
+                                Backtesting
+                            </button>
+                            <button class="submenu-btn" data-service="drawdown">
+                                <span class="material-icons">trending_down</span>
+                                Max Drawdown
+                            </button>
+                            <button class="submenu-btn" data-service="var-mc">
+                                <span class="material-icons">casino</span>
+                                VaR Monte Carlo
+                            </button>
+                        </div>
+
+                        <!-- Service: VaR/CVaR (Original) -->
+                        <div id="risk-service-var-cvar" class="risk-service-view active">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Calcula el Valor en Riesgo (VaR) y Conditional VaR (CVaR) usando diferentes métodos.
+                            </p>
+
+                            <form id="riskForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskDataset">Dataset</label>
+                                        <select id="riskDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskVariable">Variable (Retornos/Precios)</label>
+                                        <select id="riskVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                        <small>Se calcularán retornos logarítmicos si son precios</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="riskMethod">Método</label>
+                                        <select id="riskMethod" class="select-input" required>
+                                            <option value="parametric">Paramétrico (Normal)</option>
+                                            <option value="historical">Histórico</option>
+                                            <option value="monte_carlo">Monte Carlo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="riskConfidence">Nivel de Confianza</label>
+                                        <select id="riskConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="riskHorizon">Horizonte Temporal (Días)</label>
+                                        <input type="number" id="riskHorizon" class="text-input" value="1" min="1"
+                                            max="365" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span>🛡️</span> Calcular Riesgo
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: Backtesting -->
+                        <div id="risk-service-backtesting" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Valida un modelo VaR mediante backtesting con rolling window y test de Kupiec.
+                            </p>
+
+                            <form id="backtestingForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingDataset">Dataset</label>
+                                        <select id="backtestingDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingVariable">Variable (Retornos/Precios)</label>
+                                        <select id="backtestingVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="backtestingMethod">Método VaR</label>
+                                        <select id="backtestingMethod" class="select-input" required>
+                                            <option value="parametric" selected>Paramétrico</option>
+                                            <option value="historical">Histórico</option>
+                                            <option value="monte_carlo">Monte Carlo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="backtestingConfidence">Nivel de Confianza</label>
+                                        <select id="backtestingConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="backtestingWindow">Window Size (Días)</label>
+                                        <input type="number" id="backtestingWindow" class="text-input" value="250"
+                                            min="50" max="1000" required>
+                                        <small>Mínimo 50 observaciones para estimación</small>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">verified</span> Ejecutar Backtesting
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: Maximum Drawdown -->
+                        <div id="risk-service-drawdown" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                Calcula la pérdida máxima desde el pico histórico y analiza periodos de recuperación.
+                            </p>
+
+                            <form id="drawdownForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="drawdownDataset">Dataset</label>
+                                        <select id="drawdownDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="drawdownVariable">Variable (Precios)</label>
+                                        <select id="drawdownVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                        <small>Debe ser una serie de precios (no retornos)</small>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">trending_down</span> Calcular Drawdown
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Service: VaR Monte Carlo Advanced -->
+                        <div id="risk-service-var-mc" class="risk-service-view hidden">
+                            <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                                VaR Monte Carlo con simulación de trayectorias completas y múltiples distribuciones.
+                            </p>
+
+                            <form id="varMcForm" class="analysis-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcDataset">Dataset</label>
+                                        <select id="varMcDataset" class="select-input" required>
+                                            <option value="">Selecciona un dataset...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcVariable">Variable (Retornos/Precios)</label>
+                                        <select id="varMcVariable" class="select-input" required>
+                                            <option value="">Selecciona variable...</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="varMcDistribution">Distribución</label>
+                                        <select id="varMcDistribution" class="select-input" required>
+                                            <option value="normal" selected>Normal</option>
+                                            <option value="t-student">t-Student (Colas Pesadas)</option>
+                                            <option value="bootstrap">Bootstrap Histórico</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcConfidence">Nivel de Confianza</label>
+                                        <select id="varMcConfidence" class="select-input" required>
+                                            <option value="0.90">90%</option>
+                                            <option value="0.95" selected>95%</option>
+                                            <option value="0.99">99%</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="varMcHorizon">Horizonte (Días)</label>
+                                        <input type="number" id="varMcHorizon" class="text-input" value="10" min="1"
+                                            max="365" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="varMcIterations">Iteraciones</label>
+                                        <select id="varMcIterations" class="select-input" required>
+                                            <option value="1000">1,000</option>
+                                            <option value="5000">5,000</option>
+                                            <option value="10000" selected>10,000</option>
+                                            <option value="50000">50,000</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-large">
+                                    <span class="material-icons">casino</span> Simular Monte Carlo
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- Risk Results Section -->
+                    <section class="glass-card risk-results-section hidden" id="riskResultsSection"
+                        style="max-height: 900px; overflow-y: auto;">
+                        <h2 class="section-title">
+                            <span class="icon">📉</span>
+                            Resultados de Riesgo
+                        </h2>
+                        <div id="riskResultsContent">
+                            <!-- Los resultados se insertarán dinámicamente aquí -->
+                        </div>
+                    </section>
+                </div>
+
+
+            </div>
+    </div>
+    </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Procesando...</p>
+    </div>
+
+    <!-- Módulos JavaScript (Nueva arquitectura modular) -->
+    <!-- Main Application Entry Point -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

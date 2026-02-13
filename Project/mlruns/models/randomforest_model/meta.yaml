@@ -1,0 +1,9 @@
+aliases: {}
+creation_timestamp: 1756001639985
+deployment_job_id: null
+deployment_job_state: null
+description: 'Random Forest model with default parameters. R² score: 1.00 | RMSE:
+  ~0.0027. Performs slightly better than Linear Regression in generalization, making
+  it a strong tree-based contender.'
+last_updated_timestamp: 1756002160531
+name: randomforest_model

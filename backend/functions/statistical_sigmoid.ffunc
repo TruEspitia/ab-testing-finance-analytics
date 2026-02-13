@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 1
+A1, 1
+x0, 0
+sigma, 1
+<FORMULA>
+# Sigmoid (logistic): A0 + A1/(1 + exp(-(x-x0)/sigma))
+y = A0 + A1 / (1 + exp(-(x - x0) / sigma))

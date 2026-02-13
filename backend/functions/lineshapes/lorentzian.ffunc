@@ -1,0 +1,9 @@
+<PARAMETERS>
+h, 1.0000, 1
+w, 0.2000, 1
+x0, 0.5000, 1
+<FORMULA>
+# a Lorentzian lineshape
+y = h * w ** 2 / (w ** 2 + (x - x0) ** 2)
+<METADATA>
+complexity: 2

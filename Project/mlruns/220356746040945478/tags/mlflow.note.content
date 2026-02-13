@@ -1,0 +1,1 @@
+“This experiment tracks the training and evaluation of multiple regression models to predict Zone Affluence Score using cleaned demographic and economic zone data. Metrics logged include RMSE and R². Models include Linear Regression, Random Forest, and Gradient Boosting. Logged via MLflow for model comparison and registry.”

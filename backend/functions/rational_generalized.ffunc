@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+k, 1
+n, 2
+<FORMULA>
+# Rational function: A0 + A1*x^n/(k + x^n)
+y = A0 + A1 * power(x, n) / (k + power(x, n))

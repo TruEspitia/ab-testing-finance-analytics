@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/aeshu/Project/mlruns/0/3e5a282b154e429797dd669726f99fa4/artifacts
+end_time: 1755806173335
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 3e5a282b154e429797dd669726f99fa4
+run_name: calm-trout-460
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1755806173128
+status: 4
+tags: []
+user_id: aeshu

@@ -1,0 +1,7 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+omega, 1
+<FORMULA>
+# Hyperbolic cosine: A0 + A1*cosh(omega*x)
+y = A0 + A1 * np.cosh(omega * x)

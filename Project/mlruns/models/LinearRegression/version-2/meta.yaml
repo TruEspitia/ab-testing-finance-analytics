@@ -1,0 +1,14 @@
+aliases: []
+creation_timestamp: 1756055958585
+current_stage: None
+description: null
+last_updated_timestamp: 1756055958585
+name: LinearRegression
+run_id: fe02b4a29e5f447bb42e29f6c73c5be6
+run_link: null
+source: file:///C:/Users/aeshu/Project/mlruns/220356746040945478/fe02b4a29e5f447bb42e29f6c73c5be6/artifacts/linearregression
+status: READY
+status_message: null
+storage_location: file:///C:/Users/aeshu/Project/mlruns/220356746040945478/fe02b4a29e5f447bb42e29f6c73c5be6/artifacts/linearregression
+user_id: null
+version: 2

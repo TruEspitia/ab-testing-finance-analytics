@@ -1,0 +1,7 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+n, 1
+<FORMULA>
+# Inverse power: A0 + A1*x^(-n)
+y = A0 + A1 * power(x, -n)

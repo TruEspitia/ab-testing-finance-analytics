@@ -1,0 +1,6 @@
+<PARAMETERS>
+Vmax, 1
+Km, 1
+<FORMULA>
+# Michaelis-Menten enzyme kinetics: Vmax*x/(Km + x)
+y = Vmax * x / (Km + x)

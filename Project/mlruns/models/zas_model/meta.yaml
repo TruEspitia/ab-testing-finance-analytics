@@ -1,0 +1,9 @@
+aliases: {}
+creation_timestamp: 1756001462088
+deployment_job_id: null
+deployment_job_state: null
+description: Final version of the Zone Affluence Score (ZAS) model using all engineered
+  features and default pipeline. Achieved perfect R² score on test set, indicating
+  excellent fit. Logged using custom preprocessing and pipeline setup.
+last_updated_timestamp: 1756004675398
+name: zas_model

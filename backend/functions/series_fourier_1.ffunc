@@ -1,0 +1,13 @@
+<METADATA>
+complexity: 2
+description: Fourier Series approximation (1st order / Single Harmonic). y = a0 + a1*cos(w*x) + b1*sin(w*x)
+
+<PARAMETERS>
+a0, 0
+a1, 1
+b1, 1
+w, 1
+
+<FORMULA>
+# Fourier Series (1st Order)
+y = a0 + a1 * cos(w * x) + b1 * sin(w * x)

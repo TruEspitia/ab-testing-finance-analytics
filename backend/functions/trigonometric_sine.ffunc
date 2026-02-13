@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+omega, 1
+phi, 0
+<FORMULA>
+# Sine wave function: A0 + A1*sin(omega*x + phi)
+y = A0 + A1 * sin(omega * x + phi)

@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+k, 1
+lambda, 2
+<FORMULA>
+# Weibull function: A0 + A1*(1 - exp(-(k*x)**lambda))
+y = A0 + A1 * (1 - exp(-power(k * x, lambda)))

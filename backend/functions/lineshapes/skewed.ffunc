@@ -1,0 +1,14 @@
+<PARAMETERS>
+h, 1.0000, 1
+w, 0.2000, 1
+x0, 0.6000, 1
+skew, -3.0000, 1
+<FORMULA>
+# a skewed Gaussian lineshape
+if(not ('skewnorm' in locals())):
+  from scipy.stats import skewnorm
+
+xv = (x - x0) / w
+y = h * skewnorm.pdf(xv, skew)
+<METADATA>
+complexity: 1

@@ -1,0 +1,8 @@
+<PARAMETERS>
+A0, 0
+A1, 1
+k, 1
+plateau, 0
+<FORMULA>
+# Exponential with plateau: plateau + (A0 + A1*exp(-k*x))*(x < plateau/k)
+y = A0 + A1 * (1 - exp(-k * x))
